@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2 - 2026-10-25
+
+- Dark-theme brand images (`dark_icon`, `dark_logo`): the robot gets a light outline, so it
+  is visible on dark backgrounds.
+
 ## 0.1.0 - 2026-10-25
 
 First public release.
