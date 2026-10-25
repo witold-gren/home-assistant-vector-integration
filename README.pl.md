@@ -97,8 +97,10 @@ Opcje integracji (**Konfiguruj**):
 
 ## Encje
 
-Nazwy poniżej odpowiadają polskiej wersji Home Assistant. Identyfikatory encji w przykładach
-zakładają angielską instalację Home Assistant i robota o nazwie „Vector”.
+Nazwy poniżej odpowiadają polskiej wersji Home Assistant. Identyfikatory encji są angielskie w
+każdym języku Home Assistant (np. `sensor.vector_battery` także w polskiej instalacji, a nie
+`sensor.vector_bateria`); nazwy wyświetlane są przetłumaczone. Przykłady zakładają robota o
+nazwie „Vector”.
 
 | Platforma | Encje |
 | --- | --- |

@@ -95,7 +95,9 @@ Integration options (**Configure**):
 
 ## Entities
 
-Entity IDs below assume an English Home Assistant install and a robot named "Vector".
+Entity IDs are English in every Home Assistant language (e.g. `sensor.vector_battery` also in a
+Polish installation, not `sensor.vector_bateria`); the displayed names are translated. The
+examples assume a robot named "Vector".
 
 | Platform | Entities |
 | --- | --- |

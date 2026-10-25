@@ -2,6 +2,8 @@
 
 ## 0.1.2 - 2026-10-25
 
+- Entity ids are English in every Home Assistant language (`sensor.vector_battery` instead of
+  `sensor.vector_bateria` in a Polish installation); displayed names stay translated.
 - Dark-theme brand images (`dark_icon`, `dark_logo`): the robot gets a light outline, so it
   is visible on dark backgrounds.
 
