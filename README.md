@@ -10,8 +10,37 @@ exposes a local WebSocket API. Everything stays on your network — no cloud.
 With it you can watch Vector's sensors, drive him from a dashboard, use his camera and speaker, and
 let him control your home: "Hey Vector, turn on the living room light" goes to Assist.
 
+## Screenshots
+
+**Dashboard**: a tile with the camera, battery and what Vector is doing, and a popup with the
+[control card](#control-card) (drive, head, lift, hold, charger).
+
+<table>
+  <tr>
+    <td width="54%"><img src="docs/images/dashboard-card.webp" alt="Vector tile on a dashboard"></td>
+    <td width="46%"><img src="docs/images/dashboard-popup.webp" alt="Popup with the Vector control card"></td>
+  </tr>
+</table>
+
+**Integration**: one hub per bridge, one device per robot, and custom voice commands
+(**Add command**).
+
+<img src="docs/images/integration-page.webp" alt="Vector integration page">
+
+**Device page**: controls and activity; sensors and events; configuration and diagnostics.
+
+<img src="docs/images/device-controls.webp" alt="Vector device page: device info, controls and activity">
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/device-sensors-events.webp" alt="Vector sensors and events"></td>
+    <td width="50%"><img src="docs/images/device-config-diagnostics.webp" alt="Vector configuration and diagnostics"></td>
+  </tr>
+</table>
+
 ## Contents
 
+- [Screenshots](#screenshots)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Configuration](#configuration)

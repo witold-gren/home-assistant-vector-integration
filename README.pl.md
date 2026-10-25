@@ -11,8 +11,37 @@ Dzięki niej możesz śledzić czujniki Vectora, sterować nim z dashboardu, kor
 i głośnika, a także pozwolić mu sterować domem: „Hey Vector, włącz światło w salonie” trafia do
 Assist.
 
+## Zrzuty ekranu
+
+**Dashboard**: kafelek z kamerą, baterią i tym, co robi Vector, oraz okno z
+[kartą sterowania](#karta-sterowania) (jazda, głowa, ramię, trzymanie, ładowarka).
+
+<table>
+  <tr>
+    <td width="54%"><img src="docs/images/dashboard-card.webp" alt="Kafelek Vectora na dashboardzie"></td>
+    <td width="46%"><img src="docs/images/dashboard-popup.webp" alt="Okno z kartą sterowania Vectora"></td>
+  </tr>
+</table>
+
+**Integracja**: jeden hub na most, jedno urządzenie na robota i własne komendy głosowe
+(**Dodaj komendę**).
+
+<img src="docs/images/integration-page.webp" alt="Strona integracji Vector">
+
+**Strona urządzenia**: sterowanie i aktywność; sensory i zdarzenia; konfiguracja i diagnostyka.
+
+<img src="docs/images/device-controls.webp" alt="Strona urządzenia Vector: informacje, sterowanie i aktywność">
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/device-sensors-events.webp" alt="Sensory i zdarzenia Vectora"></td>
+    <td width="50%"><img src="docs/images/device-config-diagnostics.webp" alt="Konfiguracja i diagnostyka Vectora"></td>
+  </tr>
+</table>
+
 ## Spis treści
 
+- [Zrzuty ekranu](#zrzuty-ekranu)
 - [Wymagania](#wymagania)
 - [Instalacja](#instalacja)
 - [Konfiguracja](#konfiguracja)
