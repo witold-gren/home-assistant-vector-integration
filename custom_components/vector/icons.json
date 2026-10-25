@@ -1,0 +1,251 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "picked_up": {
+        "default": "mdi:hand-back-left"
+      },
+      "touched": {
+        "default": "mdi:gesture-tap"
+      },
+      "sleeping": {
+        "default": "mdi:sleep"
+      },
+      "listening": {
+        "default": "mdi:microphone"
+      },
+      "cube_connected": {
+        "default": "mdi:cube-outline"
+      }
+    },
+    "sensor": {
+      "activity": {
+        "default": "mdi:robot-happy"
+      },
+      "stimulation": {
+        "default": "mdi:lightning-bolt"
+      },
+      "last_face": {
+        "default": "mdi:face-recognition"
+      },
+      "petting_time": {
+        "default": "mdi:hand-heart"
+      },
+      "wake_word_count": {
+        "default": "mdi:account-voice"
+      },
+      "photos": {
+        "default": "mdi:image-multiple"
+      },
+      "last_speech": {
+        "default": "mdi:comment-quote"
+      },
+      "known_faces": {
+        "default": "mdi:account-group"
+      },
+      "cube_battery": {
+        "default": "mdi:cube-outline"
+      }
+    },
+    "button": {
+      "drive_on_charger": {
+        "default": "mdi:battery-charging"
+      },
+      "drive_off_charger": {
+        "default": "mdi:robot-mower"
+      },
+      "stop": {
+        "default": "mdi:stop"
+      },
+      "dance": {
+        "default": "mdi:dance-ballroom"
+      },
+      "explore": {
+        "default": "mdi:map-search"
+      },
+      "sleep": {
+        "default": "mdi:sleep"
+      },
+      "come_here": {
+        "default": "mdi:human-greeting"
+      },
+      "look_at_me": {
+        "default": "mdi:eye"
+      },
+      "fist_bump": {
+        "default": "mdi:hand-back-right"
+      },
+      "trick": {
+        "default": "mdi:magic-staff"
+      },
+      "take_photo": {
+        "default": "mdi:camera"
+      },
+      "refresh_camera": {
+        "default": "mdi:camera-retake"
+      },
+      "connect_cube": {
+        "default": "mdi:cube-scan"
+      },
+      "disconnect_cube": {
+        "default": "mdi:cube-off-outline"
+      },
+      "flash_cube": {
+        "default": "mdi:lightbulb-on-outline"
+      },
+      "pickup_cube": {
+        "default": "mdi:forklift"
+      },
+      "roll_cube": {
+        "default": "mdi:dice-6"
+      },
+      "dock_with_cube": {
+        "default": "mdi:cube-send"
+      },
+      "turn_towards_face": {
+        "default": "mdi:account-eye"
+      }
+    },
+    "select": {
+      "master_volume": {
+        "default": "mdi:volume-high"
+      },
+      "eye_color": {
+        "default": "mdi:eye"
+      },
+      "locale": {
+        "default": "mdi:translate"
+      },
+      "button_wakeword": {
+        "default": "mdi:gesture-tap-button"
+      },
+      "animation": {
+        "default": "mdi:animation-play"
+      }
+    },
+    "number": {
+      "head_angle": {
+        "default": "mdi:head"
+      },
+      "lift_height": {
+        "default": "mdi:forklift"
+      }
+    },
+    "switch": {
+      "hold_control": {
+        "default": "mdi:controller"
+      },
+      "voice_router": {
+        "default": "mdi:account-voice"
+      },
+      "llm_proxy": {
+        "default": "mdi:brain"
+      },
+      "clock_24_hour": {
+        "default": "mdi:clock-time-four-outline"
+      },
+      "dist_is_metric": {
+        "default": "mdi:ruler"
+      },
+      "temp_is_fahrenheit": {
+        "default": "mdi:temperature-fahrenheit"
+      }
+    },
+    "light": {
+      "eyes": {
+        "default": "mdi:eye"
+      }
+    },
+    "media_player": {
+      "speaker": {
+        "default": "mdi:speaker"
+      }
+    },
+    "event": {
+      "wake_word": {
+        "default": "mdi:account-voice"
+      },
+      "interaction": {
+        "default": "mdi:gesture-tap"
+      },
+      "face": {
+        "default": "mdi:face-recognition"
+      },
+      "photo": {
+        "default": "mdi:camera"
+      },
+      "speech": {
+        "default": "mdi:account-voice"
+      }
+    },
+    "text": {
+      "time_zone": {
+        "default": "mdi:map-clock"
+      },
+      "default_location": {
+        "default": "mdi:weather-partly-cloudy"
+      }
+    }
+  },
+  "services": {
+    "say_text": {
+      "service": "mdi:message-text"
+    },
+    "play_animation": {
+      "service": "mdi:animation-play"
+    },
+    "play_animation_trigger": {
+      "service": "mdi:animation-play"
+    },
+    "list_animations": {
+      "service": "mdi:format-list-bulleted"
+    },
+    "run_intent": {
+      "service": "mdi:robot"
+    },
+    "drive_straight": {
+      "service": "mdi:arrow-up-bold"
+    },
+    "turn": {
+      "service": "mdi:rotate-left"
+    },
+    "drive_wheels": {
+      "service": "mdi:car-traction-control"
+    },
+    "set_eye_color": {
+      "service": "mdi:eye"
+    },
+    "stop": {
+      "service": "mdi:stop"
+    },
+    "list_photos": {
+      "service": "mdi:image-multiple"
+    },
+    "move": {
+      "service": "mdi:gamepad-variant"
+    },
+    "delete_photo": {
+      "service": "mdi:image-remove"
+    },
+    "list_faces": {
+      "service": "mdi:account-group"
+    },
+    "rename_face": {
+      "service": "mdi:account-edit"
+    },
+    "delete_face": {
+      "service": "mdi:account-remove"
+    },
+    "enroll_face": {
+      "service": "mdi:account-plus"
+    },
+    "go_to": {
+      "service": "mdi:map-marker-path"
+    },
+    "turn_towards_face": {
+      "service": "mdi:account-eye"
+    },
+    "go_to_cube": {
+      "service": "mdi:cube-send"
+    }
+  }
+}

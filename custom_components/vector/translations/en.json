@@ -1,0 +1,773 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Vector bridge",
+        "description": "Address of the vector-bridge app (WebSocket API).",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "token": "Token"
+        }
+      },
+      "hassio_confirm": {
+        "title": "Vector app",
+        "description": "Set up the Vector bridge discovered at {host}?"
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the bridge.",
+      "invalid_auth": "The bridge rejected the token."
+    },
+    "abort": {
+      "already_configured": "This bridge is already configured."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "on_charger": {
+        "name": "On charger"
+      },
+      "picked_up": {
+        "name": "Picked up"
+      },
+      "touched": {
+        "name": "Touched"
+      },
+      "cliff": {
+        "name": "Cliff"
+      },
+      "sleeping": {
+        "name": "Sleeping"
+      },
+      "listening": {
+        "name": "Listening"
+      },
+      "cube_connected": {
+        "name": "Cube"
+      }
+    },
+    "sensor": {
+      "battery_voltage": {
+        "name": "Battery voltage"
+      },
+      "battery_level": {
+        "name": "Battery level",
+        "state": {
+          "unknown": "Unknown",
+          "low": "Low",
+          "nominal": "Nominal",
+          "full": "Full"
+        }
+      },
+      "activity": {
+        "name": "Activity"
+      },
+      "stimulation": {
+        "name": "Stimulation"
+      },
+      "last_face": {
+        "name": "Last face"
+      },
+      "alive_time": {
+        "name": "Time alive"
+      },
+      "petting_time": {
+        "name": "Petting time"
+      },
+      "distance_driven": {
+        "name": "Distance driven"
+      },
+      "wake_word_count": {
+        "name": "Wake word reactions"
+      },
+      "photos": {
+        "name": "Photos"
+      },
+      "last_speech": {
+        "name": "Last speech",
+        "state_attributes": {
+          "handled": {
+            "name": "Handled by Home Assistant"
+          },
+          "response": {
+            "name": "Response"
+          },
+          "kept_on_vector": {
+            "name": "Kept on Vector"
+          }
+        }
+      },
+      "known_faces": {
+        "name": "Known faces"
+      },
+      "cube_battery": {
+        "name": "Cube battery"
+      }
+    },
+    "button": {
+      "drive_on_charger": {
+        "name": "Go to charger"
+      },
+      "drive_off_charger": {
+        "name": "Drive off charger"
+      },
+      "stop": {
+        "name": "Stop"
+      },
+      "dance": {
+        "name": "Dance"
+      },
+      "explore": {
+        "name": "Explore"
+      },
+      "sleep": {
+        "name": "Go to sleep"
+      },
+      "come_here": {
+        "name": "Come here"
+      },
+      "look_at_me": {
+        "name": "Look at me"
+      },
+      "fist_bump": {
+        "name": "Fist bump"
+      },
+      "trick": {
+        "name": "Do a trick"
+      },
+      "take_photo": {
+        "name": "Take a photo"
+      },
+      "refresh": {
+        "name": "Refresh state"
+      },
+      "refresh_camera": {
+        "name": "Refresh camera image"
+      },
+      "connect_cube": {
+        "name": "Connect cube"
+      },
+      "disconnect_cube": {
+        "name": "Disconnect cube"
+      },
+      "flash_cube": {
+        "name": "Flash cube lights"
+      },
+      "pickup_cube": {
+        "name": "Pick up cube"
+      },
+      "roll_cube": {
+        "name": "Roll cube"
+      },
+      "dock_with_cube": {
+        "name": "Dock with cube"
+      },
+      "turn_towards_face": {
+        "name": "Turn to last face"
+      }
+    },
+    "select": {
+      "master_volume": {
+        "name": "Volume",
+        "state": {
+          "mute": "Mute",
+          "low": "Low",
+          "medium_low": "Medium low",
+          "medium": "Medium",
+          "medium_high": "Medium high",
+          "high": "High"
+        }
+      },
+      "eye_color": {
+        "name": "Eye color",
+        "state": {
+          "teal": "Teal",
+          "orange": "Orange",
+          "yellow": "Yellow",
+          "lime": "Lime",
+          "sapphire": "Sapphire",
+          "purple": "Purple",
+          "green": "Green"
+        }
+      },
+      "locale": {
+        "name": "Robot language"
+      },
+      "button_wakeword": {
+        "name": "Back button",
+        "state": {
+          "hey_vector": "Hey Vector",
+          "alexa": "Alexa"
+        }
+      },
+      "animation": {
+        "name": "Play animation"
+      }
+    },
+    "number": {
+      "head_angle": {
+        "name": "Head angle"
+      },
+      "lift_height": {
+        "name": "Lift height"
+      }
+    },
+    "switch": {
+      "hold_control": {
+        "name": "Manual control"
+      },
+      "voice_router": {
+        "name": "Voice → Home Assistant"
+      },
+      "llm_proxy": {
+        "name": "wire-pod LLM → Home Assistant"
+      },
+      "clock_24_hour": {
+        "name": "24-hour clock"
+      },
+      "dist_is_metric": {
+        "name": "Metric units"
+      },
+      "temp_is_fahrenheit": {
+        "name": "Fahrenheit"
+      }
+    },
+    "light": {
+      "eyes": {
+        "name": "Eyes"
+      }
+    },
+    "event": {
+      "wake_word": {
+        "name": "Wake word",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "begin": "Listening started",
+              "end": "Listening ended"
+            }
+          }
+        }
+      },
+      "interaction": {
+        "name": "Interaction",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "touched": "Touched",
+              "picked_up": "Picked up",
+              "button_pressed": "Button pressed",
+              "cliff": "Cliff",
+              "cube_tapped": "Cube tapped"
+            }
+          }
+        }
+      },
+      "face": {
+        "name": "Face",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "face_seen": "Face seen"
+            }
+          }
+        }
+      },
+      "photo": {
+        "name": "Photo",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "photo_taken": "Photo taken"
+            }
+          }
+        }
+      },
+      "speech": {
+        "name": "Speech",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "handled": "Handled by Home Assistant",
+              "passed": "Passed to wire-pod"
+            }
+          }
+        }
+      }
+    },
+    "camera": {
+      "camera": {
+        "name": "Camera"
+      }
+    },
+    "image": {
+      "last_photo": {
+        "name": "Last photo"
+      }
+    },
+    "media_player": {
+      "speaker": {
+        "name": "Speaker"
+      }
+    },
+    "text": {
+      "time_zone": {
+        "name": "Time zone"
+      },
+      "default_location": {
+        "name": "Weather location"
+      }
+    }
+  },
+  "services": {
+    "say_text": {
+      "name": "Say text",
+      "description": "Vector says the text.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "text": {
+          "name": "Text",
+          "description": "What to say."
+        },
+        "engine": {
+          "name": "Voice",
+          "description": "From options (default), wire-pod, Home Assistant TTS or Vector's built-in English voice."
+        }
+      }
+    },
+    "play_animation": {
+      "name": "Play animation",
+      "description": "Plays an animation by name (see list_animations).",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Animation name, e.g. anim_pounce_success_02."
+        },
+        "loops": {
+          "name": "Loops",
+          "description": "How many times."
+        }
+      }
+    },
+    "play_animation_trigger": {
+      "name": "Play animation trigger",
+      "description": "Plays a random animation of a trigger group (see list_animations with triggers).",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "name": {
+          "name": "Trigger",
+          "description": "Trigger name, e.g. GreetAfterLongTime."
+        },
+        "loops": {
+          "name": "Loops",
+          "description": "How many times."
+        }
+      }
+    },
+    "list_animations": {
+      "name": "List animations",
+      "description": "Returns the animation (or trigger) names the robot knows.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "triggers": {
+          "name": "Triggers",
+          "description": "List trigger groups instead of single animations."
+        }
+      }
+    },
+    "run_intent": {
+      "name": "Run intent",
+      "description": "Runs a voice-command behavior as if heard, e.g. intent_imperative_dance.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "intent": {
+          "name": "Intent",
+          "description": "Intent name."
+        },
+        "param": {
+          "name": "Parameter",
+          "description": "Optional parameter (JSON)."
+        }
+      }
+    },
+    "drive_straight": {
+      "name": "Drive straight",
+      "description": "Drives forward (or back with a negative distance).",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "distance": {
+          "name": "Distance",
+          "description": "Millimetres."
+        },
+        "speed": {
+          "name": "Speed",
+          "description": "mm/s."
+        }
+      }
+    },
+    "turn": {
+      "name": "Turn",
+      "description": "Turns in place (positive = left).",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "angle": {
+          "name": "Angle",
+          "description": "Degrees."
+        },
+        "speed": {
+          "name": "Speed",
+          "description": "Degrees per second."
+        }
+      }
+    },
+    "drive_wheels": {
+      "name": "Drive wheels",
+      "description": "Runs both wheels for a while, then stops.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "left": {
+          "name": "Left",
+          "description": "Left wheel mm/s."
+        },
+        "right": {
+          "name": "Right",
+          "description": "Right wheel mm/s."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Seconds (max 10)."
+        }
+      }
+    },
+    "set_eye_color": {
+      "name": "Set eye color",
+      "description": "Custom eye color until the next settings change or reboot.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "hue": {
+          "name": "Hue",
+          "description": "0–360°."
+        },
+        "saturation": {
+          "name": "Saturation",
+          "description": "0–100 %."
+        }
+      }
+    },
+    "stop": {
+      "name": "Stop",
+      "description": "Stops the current action and motors, gives control back to Vector.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        }
+      }
+    },
+    "list_photos": {
+      "name": "List photos",
+      "description": "Photos stored on the robot, newest first.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        }
+      }
+    },
+    "delete_photo": {
+      "name": "Delete photo",
+      "description": "Deletes a photo stored on the robot.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "photo_id": {
+          "name": "Photo ID",
+          "description": "From list_photos."
+        }
+      }
+    },
+    "move": {
+      "name": "Move",
+      "description": "Wheels, head and lift at the given speeds; Vector stops 0.7 s after the last call (repeat it while driving).",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "left": {
+          "name": "Left wheel",
+          "description": "mm/s"
+        },
+        "right": {
+          "name": "Right wheel",
+          "description": "mm/s"
+        },
+        "head": {
+          "name": "Head",
+          "description": "rad/s, + = up"
+        },
+        "lift": {
+          "name": "Lift",
+          "description": "rad/s, + = up"
+        }
+      }
+    },
+    "list_faces": {
+      "name": "List faces",
+      "description": "Faces Vector knows by name.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        }
+      }
+    },
+    "rename_face": {
+      "name": "Rename face",
+      "description": "Changes the name of a known face.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "face_id": {
+          "name": "ID",
+          "description": "From list_faces."
+        },
+        "name": {
+          "name": "Name",
+          "description": "New name."
+        }
+      }
+    },
+    "delete_face": {
+      "name": "Forget face",
+      "description": "Vector forgets the face.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "face_id": {
+          "name": "ID",
+          "description": "From list_faces."
+        }
+      }
+    },
+    "enroll_face": {
+      "name": "Meet a face",
+      "description": "Vector looks for the face in front of him and learns it under this name (stand still in front of him).",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Name to remember."
+        }
+      }
+    },
+    "go_to": {
+      "name": "Go to",
+      "description": "Drives to a point, avoiding obstacles (relative: x forward, y left in mm, angle left in °).",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "x": {
+          "name": "x",
+          "description": "mm"
+        },
+        "y": {
+          "name": "y",
+          "description": "mm"
+        },
+        "angle": {
+          "name": "Angle",
+          "description": "°"
+        },
+        "relative": {
+          "name": "Relative",
+          "description": "From where Vector stands now (off: his own map)."
+        }
+      }
+    },
+    "turn_towards_face": {
+      "name": "Turn towards face",
+      "description": "Turns to a known face (default: the last one seen).",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "face_id": {
+          "name": "ID",
+          "description": "-1 = last seen."
+        }
+      }
+    },
+    "go_to_cube": {
+      "name": "Go to cube",
+      "description": "Drives to the connected cube.",
+      "fields": {
+        "device_id": {
+          "name": "Robot",
+          "description": "Vector robot (optional with one robot)."
+        },
+        "distance": {
+          "name": "Distance",
+          "description": "mm"
+        }
+      }
+    }
+  },
+  "selector": {
+    "engine": {
+      "options": {
+        "default": "From options",
+        "wirepod": "wire-pod",
+        "tts": "Home Assistant TTS",
+        "vector": "Vector (built-in, English)"
+      }
+    },
+    "behavior": {
+      "options": {
+        "none": "Nothing",
+        "dance": "Dance",
+        "explore": "Explore",
+        "sleep": "Go to sleep",
+        "charger": "Go to the charger",
+        "come_here": "Come here",
+        "look_at_me": "Look at me",
+        "fist_bump": "Fist bump",
+        "trick": "Do a trick",
+        "take_photo": "Take a photo",
+        "happy": "Happy (praise)",
+        "love": "Love",
+        "hello": "Greeting"
+      }
+    },
+    "voice": {
+      "options": {
+        "wirepod": "wire-pod (its TTS)",
+        "tts": "Home Assistant TTS"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Voice → Home Assistant",
+        "description": "What Vector hears goes to this Assist agent first. When the agent does not understand, wire-pod handles the sentence as before. With an LLM agent everything is handled by Home Assistant.",
+        "data": {
+          "agent_id": "Assist agent",
+          "respond": "Vector says the answer",
+          "keep_on_vector": "Keep on Vector",
+          "voice": "Answer voice",
+          "tts_engine": "TTS engine",
+          "tts_language": "TTS language",
+          "tts_voice": "TTS voice",
+          "llm_agent": "Agent for wire-pod LLM questions"
+        },
+        "data_description": {
+          "keep_on_vector": "One phrase per line. Sentences containing one go straight to wire-pod (Vector's own clock, weather, timer, dance…) without asking Assist.",
+          "voice": "wire-pod: its own TTS (e.g. Piper over Wyoming). Home Assistant TTS: the engine below, played on Vector's speaker.",
+          "tts_language": "e.g. en_US for Piper (empty = engine default).",
+          "tts_voice": "Optional voice name of the engine.",
+          "llm_agent": "Answers what wire-pod would ask its LLM, when the switch “wire-pod LLM → Home Assistant” is on (empty = the Assist agent above)."
+        }
+      }
+    },
+    "error": {
+      "tts_engine_required": "Choose a TTS engine."
+    }
+  },
+  "config_subentries": {
+    "command": {
+      "initiate_flow": {
+        "user": "Add command"
+      },
+      "entry_type": "Command",
+      "step": {
+        "user": {
+          "title": "Voice command",
+          "description": "Checked before Assist. Every match also fires the vector_command event.",
+          "data": {
+            "name": "Name",
+            "sentences": "Sentences",
+            "response": "Answer",
+            "script": "Script",
+            "behavior": "Vector reaction",
+            "animation": "Animation group"
+          },
+          "data_description": {
+            "sentences": "One per line, Assist syntax: [optional], (one|other), {slot} = any text, e.g. 'good night [vector]', 'play {song}'.",
+            "response": "What Vector says ({slot} is replaced). Empty = silent.",
+            "script": "Runs with variables text, slots, esn, device_id.",
+            "behavior": "After the answer, Vector does this (like the voice command).",
+            "animation": "Instead of a reaction: an animation group, e.g. GreetAfterLongTime (list: vector.list_animations)."
+          }
+        },
+        "reconfigure": {
+          "title": "Voice command",
+          "description": "Checked before Assist. Every match also fires the vector_command event.",
+          "data": {
+            "name": "Name",
+            "sentences": "Sentences",
+            "response": "Answer",
+            "script": "Script",
+            "behavior": "Vector reaction",
+            "animation": "Animation group"
+          },
+          "data_description": {
+            "sentences": "One per line, Assist syntax: [optional], (one|other), {slot} = any text, e.g. 'good night [vector]', 'play {song}'.",
+            "response": "What Vector says ({slot} is replaced). Empty = silent.",
+            "script": "Runs with variables text, slots, esn, device_id.",
+            "behavior": "After the answer, Vector does this (like the voice command).",
+            "animation": "Instead of a reaction: an animation group, e.g. GreetAfterLongTime (list: vector.list_animations)."
+          }
+        }
+      },
+      "error": {
+        "no_sentences": "Add at least one sentence.",
+        "invalid_sentences": "A sentence has a syntax error (brackets, |, {slot})."
+      },
+      "abort": {
+        "reconfigure_successful": "Command saved."
+      }
+    }
+  }
+}
