@@ -84,6 +84,8 @@ class FakeBridge:
         self.mjpeg_requests = 0
         self.audio: list[tuple[bytes, dict[str, str]]] = []
         self.voice_router = {"enabled": True, "hook": "http://192.168.1.10:8790"}
+        # live stream announced in hello (add-on 0.2.0+); None = an older add-on
+        self.stream: dict[str, Any] | None = None
         app = web.Application()
         app.router.add_get("/ws", self._ws)
         app.router.add_get("/snapshot/{esn}", self._snapshot)
@@ -105,15 +107,16 @@ class FakeBridge:
         ws = web.WebSocketResponse()
         await ws.prepare(request)
         self.sockets.append(ws)
-        await ws.send_json(
-            {
-                "type": "hello",
-                "version": "test",
-                "api": 1,
-                "robots": list(self.robots.values()),
-                "voice_router": self.voice_router,
-            }
-        )
+        hello = {
+            "type": "hello",
+            "version": "test",
+            "api": 1,
+            "robots": list(self.robots.values()),
+            "voice_router": self.voice_router,
+        }
+        if self.stream is not None:
+            hello["stream"] = self.stream
+        await ws.send_json(hello)
         async for msg in ws:
             if msg.type is not WSMsgType.TEXT:
                 continue

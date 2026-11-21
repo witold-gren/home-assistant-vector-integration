@@ -8,6 +8,7 @@ import contextlib
 import itertools
 import logging
 from typing import Any
+from urllib.parse import quote
 
 import aiohttp
 
@@ -38,6 +39,7 @@ class VectorClient:
         token: str | None,
     ) -> None:
         self._session = session
+        self._host = host
         self._base = f"http://{host}:{port}"
         self._token = token or None
         self._ws: aiohttp.ClientWebSocketResponse | None = None
@@ -51,6 +53,8 @@ class VectorClient:
         # bridge voice router: {"enabled": bool, "hook": str}; None when the bridge has none
         self.voice_router: dict[str, Any] | None = None
         self.version: str | None = None
+        # live stream announced by the add-on: {"rtsp_port", "path", "username", "audio"}
+        self.stream: dict[str, Any] | None = None
         self.connected = False
 
     @property
@@ -99,6 +103,8 @@ class VectorClient:
         self.version = hello.get("version")
         self.robots = {r["esn"]: r for r in hello.get("robots", []) if r.get("esn")}
         self.voice_router = hello.get("voice_router")
+        stream = hello.get("stream")
+        self.stream = stream if isinstance(stream, dict) else None
         self.connected = True
         self._notify()
 
@@ -182,6 +188,20 @@ class VectorClient:
     def url(self, path: str) -> str:
         """URL of a bridge HTTP resource (MJPEG, photos)."""
         return f"{self._base}{path}"
+
+    def stream_url(self) -> str | None:
+        """RTSP URL of the add-on's live stream (go2rtc), or None when the add-on has none.
+
+        Add-on 0.2.0+ announces it in hello; Home Assistant's go2rtc pulls it and serves WebRTC.
+        The password is the API token (the stream is only reachable inside the HA network).
+        """
+        info = self.stream
+        if not info or not info.get("rtsp_port"):
+            return None
+        user = quote(str(info.get("username") or "vector"), safe="")
+        auth = f"{user}:{quote(self._token, safe='')}@" if self._token else ""
+        path = str(info.get("path") or "vector").lstrip("/")
+        return f"rtsp://{auth}{self._host}:{int(info['rtsp_port'])}/{path}"
 
     @property
     def headers(self) -> dict[str, str]:

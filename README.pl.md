@@ -112,7 +112,7 @@ nazwie „Vector”.
 | Światło | Oczy (dowolny własny kolor) |
 | Przełącznik | Ręczne sterowanie, Głos → Home Assistant, LLM wire-pod → Home Assistant, zegar 24 h, jednostki metryczne, stopnie Fahrenheita |
 | Tekst | Strefa czasowa, lokalizacja pogody |
-| Kamera | Strumień MJPEG na żądanie, zapamiętany zrzut |
+| Kamera | Podgląd na żywo na żądanie (WebRTC z dźwiękiem, dodatek 0.2.0+; MJPEG ze starszym dodatkiem), zapamiętany zrzut |
 | Obraz | Ostatnie zdjęcie |
 | Odtwarzacz multimediów | Głośnik Vectora (`tts.speak`, pliki multimedialne, adresy URL audio) |
 | Zdarzenie | Hey Vector (słowo wybudzające), kontakt, twarz, zdjęcie, wypowiedź |
@@ -228,7 +228,17 @@ camera: camera.vector
   zamknięciu karty. Wyłączysz je przez `hold: false` albo przełącznikiem **Trzymaj** na karcie.
 - **Na ładowarce** pojawia się pasek z przyciskiem **Zjedź z ładowarki**, a strzałka do przodu
   zjeżdża Vectorem z ładowarki.
-- **Kamera**: strumień działa tylko wtedy, gdy karta jest otwarta; zamknięcie karty wyłącza kamerę.
+- **Kamera na żywo**: dotknij ▶, aby oglądać. Z dodatkiem Vector 0.2.0 lub nowszym to prawdziwe
+  wideo (WebRTC przez go2rtc w Home Assistant) z mikrofonem Vectora; ze starszym dodatkiem karta
+  używa MJPEG. Wcześniej karta pokazuje ostatnią zapamiętaną klatkę (albo ekran „podgląd
+  wyłączony”) i sama nigdy nie budzi kamery. Podgląd kończy się po dotknięciu ✕, po 5 minutach bez
+  dotknięcia i gdy strona przechodzi w tło.
+- **Sterowanie na pełnym ekranie** (⛶): poziomo, obraz z kamery wypełnia ekran. Z lewej krzyżak
+  jazdy (przód, tył, skręt, STOP); z prawej słuchanie Vectora (🔊), głowa i ramię; na dole prędkość
+  i przyciski ładowarki. Na iPhonie widok omija wyspę aparatu. Dźwięk startuje wyciszony
+  (przeglądarki pozwalają na dźwięk dopiero po dotknięciu) — dotknij 🔊, aby słyszeć Vectora.
+- **Niedostępny robot**: karta to mówi i wyłącza przyciski, zamiast pokazywać zepsuty obrazek
+  i „unavailable %”.
 
 ### Okno popup z browser_mod
 
@@ -275,7 +285,11 @@ polska instalacja dostaje polskie identyfikatory encji). Sprawdź swoje w
 
 - **Obrazy na ekranie twarzy** nie są obsługiwane: na Vectorze 2.0 wysłanie obrazu na ekran twarzy
   zawiesza robota.
-- **Kamera** działa z prędkością około 2 klatek na sekundę (MJPEG przez bridge).
+- **Kamera** daje około 2 nowych obrazów na sekundę (ograniczenie strumienia kamery w SDK Vectora).
+  Podgląd na żywo powtarza ostatni obraz z częstotliwością 10 kl./s, więc odtwarza się płynnie, ale
+  ruch odświeża się mniej więcej dwa razy na sekundę.
+- **Mikrofon**: strumień audio z SDK Vectora nie jest dokładnie opisany; jeśli dźwięk jest za szybki
+  lub za wolny, ustaw w dodatku opcję *Częstotliwość mikrofonu* na wartość pokazaną w jego logu.
 - **Kamera na ładowarce**: gdy Vector stoi na ładowarce, kamera wymaga przejęcia kontroli nad
   zachowaniem, więc Vector stoi nieruchomo, dopóki ktoś ogląda strumień.
 - Długie lub nieskończone strumienie audio nie są obsługiwane na głośniku; bridge odtwarza całe

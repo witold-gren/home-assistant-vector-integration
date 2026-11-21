@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>vector-control-card harness</title>
+<style>html,body{margin:0;height:100%;background:#1c2330;font-family:sans-serif}</style>
+</head>
+<body>
+<!-- Dashboards wrap cards in transformed containers: position:fixed inside them is relative to
+     the tile, which is why the full-screen view must be a portal in <body>. -->
+<div id="wrap" style="transform:translateZ(0);padding:12px;width:380px"><div id="slot"></div></div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const offline = params.get("offline") === "1";
+  const stream = params.get("stream") !== "0";
+
+  // The card registers itself once <home-assistant> exists (like in the real frontend).
+  customElements.define("home-assistant", class extends HTMLElement {});
+
+  // Fake HA camera player: records how the card created it; contains a <video> like the real one.
+  window.streams = 0;
+  customElements.define("ha-camera-stream", class extends HTMLElement {
+    connectedCallback() {
+      if (!this.shadowRoot) this.attachShadow({ mode: "open" }).innerHTML = "<video muted></video>";
+      window.streams += 1;
+    }
+  });
+  window.loadCardHelpers = async () => ({ createCardElement: () => document.createElement("div") });
+
+  const DEV = "dev-vector";
+  const reg = (id, key) => ({ entity_id: id, device_id: DEV, platform: "vector", translation_key: key });
+  const st = (id, state, attributes = {}) => ({ entity_id: id, state, attributes });
+  const unavailable = (id, attributes = {}) => st(id, "unavailable", attributes);
+  window.calls = [];
+  window.hass = {
+    language: "pl",
+    entities: {
+      "camera.vector": reg("camera.vector", "camera"),
+      "sensor.vector_battery": reg("sensor.vector_battery", null),
+      "sensor.vector_activity": reg("sensor.vector_activity", "activity"),
+      "binary_sensor.vector_on_charger": reg("binary_sensor.vector_on_charger", "on_charger"),
+      "switch.vector_manual_control": reg("switch.vector_manual_control", "hold_control"),
+      "button.vector_drive_off_charger": reg("button.vector_drive_off_charger", "drive_off_charger"),
+      "button.vector_go_to_charger": reg("button.vector_go_to_charger", "drive_on_charger"),
+      "button.vector_refresh_camera_image": reg("button.vector_refresh_camera_image", "refresh_camera"),
+    },
+    states: offline
+      ? {
+          "camera.vector": unavailable("camera.vector", { supported_features: stream ? 2 : 0 }),
+          "sensor.vector_battery": unavailable("sensor.vector_battery", { device_class: "battery" }),
+          "sensor.vector_activity": unavailable("sensor.vector_activity"),
+          "binary_sensor.vector_on_charger": unavailable("binary_sensor.vector_on_charger"),
+          "switch.vector_manual_control": unavailable("switch.vector_manual_control"),
+        }
+      : {
+          "camera.vector": st("camera.vector", "idle", { access_token: "tok1", supported_features: stream ? 2 : 0 }),
+          "sensor.vector_battery": st("sensor.vector_battery", "87", { device_class: "battery" }),
+          "sensor.vector_activity": st("sensor.vector_activity", "Exploring"),
+          "binary_sensor.vector_on_charger": st("binary_sensor.vector_on_charger", "off"),
+          "switch.vector_manual_control": st("switch.vector_manual_control", "on"),
+          "button.vector_drive_off_charger": st("button.vector_drive_off_charger", "unknown"),
+          "button.vector_go_to_charger": st("button.vector_go_to_charger", "unknown"),
+          "button.vector_refresh_camera_image": st("button.vector_refresh_camera_image", "unknown"),
+        },
+    callService(domain, service, data) {
+      window.calls.push({ domain, service, data, t: performance.now() });
+      return Promise.resolve();
+    },
+  };
+</script>
+<script src="/custom_components/vector/www/vector-control-card.js"></script>
+<script>
+  customElements.whenDefined("vector-control-card").then(() => {
+    window.card = document.createElement("vector-control-card");
+    card.setConfig({ type: "custom:vector-control-card", camera: "camera.vector" });
+    document.getElementById("slot").appendChild(card);
+    card.hass = window.hass;
+    window.cardReady = true;
+  });
+</script>
+</body>
+</html>

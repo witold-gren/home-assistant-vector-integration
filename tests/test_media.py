@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 from homeassistant.components import media_source
-from homeassistant.components.camera import async_get_image
+from homeassistant.components.camera import (
+    CameraEntityFeature,
+    async_get_image,
+    async_get_stream_source,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_capture_events
 
+from custom_components.vector.api import VectorClient
 from custom_components.vector.const import DOMAIN
 
-from .conftest import ESN, JPEG, FakeBridge, settle
+from .conftest import ESN, JPEG, TOKEN, FakeBridge, settle
 from .test_init import setup
 
 
@@ -31,6 +36,36 @@ async def test_camera_uses_cached_frames(
     await bridge.push(ESN)
     await settle(hass)
     assert hass.states.get("camera.vector").state == "streaming"
+
+
+async def test_camera_without_live_stream_is_mjpeg_only(
+    hass: HomeAssistant, bridge: FakeBridge, entry: MockConfigEntry
+) -> None:
+    """An older add-on announces no stream: no STREAM feature, the frontend uses MJPEG."""
+    await setup(hass, entry)
+    assert hass.states.get("camera.vector").attributes["supported_features"] == 0
+    assert await async_get_stream_source(hass, "camera.vector") is None
+
+
+async def test_camera_live_stream_from_the_add_on(
+    hass: HomeAssistant, bridge: FakeBridge, entry: MockConfigEntry
+) -> None:
+    """Add-on 0.2.0+: HA's go2rtc pulls RTSP from the add-on (user vector, token as password)."""
+    bridge.stream = {"rtsp_port": 8554, "path": "vector", "username": "vector", "audio": True}
+    await setup(hass, entry)
+    state = hass.states.get("camera.vector")
+    assert state.attributes["supported_features"] == CameraEntityFeature.STREAM
+    assert (
+        await async_get_stream_source(hass, "camera.vector")
+        == f"rtsp://vector:{TOKEN}@127.0.0.1:8554/vector"
+    )
+
+
+def test_stream_url_escapes_the_token() -> None:
+    client = VectorClient(None, "local-vector", 3012, "a/b@c:d")  # type: ignore[arg-type]
+    assert client.stream_url() is None
+    client.stream = {"rtsp_port": 8554, "path": "/vector", "username": "vector"}
+    assert client.stream_url() == "rtsp://vector:a%2Fb%40c%3Ad@local-vector:8554/vector"
 
 
 async def test_mjpeg_proxy(

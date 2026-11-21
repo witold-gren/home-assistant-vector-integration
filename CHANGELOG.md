@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.0 - 2026-11-21
+
+- **Live camera.** With the Vector add-on 0.2.0+ the camera entity has a real stream (WebRTC through
+  Home Assistant's go2rtc, with Vector's microphone) instead of reloaded JPEG frames; with older
+  add-ons it stays MJPEG.
+- **Control card:**
+  - The camera area shows a proper "preview is off" screen (or "Vector is unavailable"), never the
+    browser's broken-image icon; ▶ starts the live view, ✕ stops it.
+  - The live view stops after 5 minutes without a touch and when the page goes to the background.
+  - Battery and activity show "—" instead of "unavailable %"; controls are disabled while the robot
+    is unavailable.
+  - **Full-screen control view** (⛶), like the Loona app: landscape, the camera fills the screen,
+    driving pad on the left, listening (🔊 Vector's microphone), head and lift on the right, speed and
+    charger at the bottom; keeps clear of the iPhone's Dynamic Island.
+  - Driving always ends with a stop: on release, lost pointer, closing the full screen, the page
+    going to the background or the card being rebuilt.
+- Browser tests of the card (Playwright + Chrome, `tests/browser`, run separately:
+  `.venv/bin/python -m pytest tests/browser -p no:homeassistant`).
+
 ## 0.1.2 - 2026-10-25
 
 - Entity ids are English in every Home Assistant language (`sensor.vector_battery` instead of

@@ -109,7 +109,7 @@ examples assume a robot named "Vector".
 | Light | Eyes (any custom color) |
 | Switch | Manual control, Voice → Home Assistant, wire-pod LLM → Home Assistant, 24-hour clock, metric units, Fahrenheit |
 | Text | Time zone, weather location |
-| Camera | MJPEG stream on demand, cached snapshot |
+| Camera | Live stream on demand (WebRTC with sound, add-on 0.2.0+; MJPEG with older add-ons), cached snapshot |
 | Image | Last photo |
 | Media player | Vector's speaker (`tts.speak`, media files, audio URLs) |
 | Event | Wake word, interaction, face, photo, speech |
@@ -221,7 +221,17 @@ camera: camera.vector
   closes. Use `hold: false` to disable it, or the **Hold** toggle on the card.
 - **On the charger** a bar with **Drive off charger** appears, and the forward arrow drives Vector
   off the charger.
-- **Camera**: the stream runs only while the card is open; closing the card stops the camera.
+- **Live camera**: tap ▶ to watch. With the Vector add-on 0.2.0 or newer this is real video
+  (WebRTC through Home Assistant's go2rtc) with Vector's microphone; older add-ons fall back to
+  MJPEG. Before that the card shows the last cached frame (or a "preview is off" screen) and never
+  wakes the camera by itself. The live view stops when you tap ✕, after 5 minutes without a touch,
+  and when the page goes to the background.
+- **Full-screen control** (⛶): landscape, the camera fills the screen. Driving pad (forward, back,
+  turn, STOP) on the left; listen to Vector (🔊), head and lift on the right; speed and charger
+  buttons at the bottom. On an iPhone the view keeps clear of the Dynamic Island. Sound starts
+  muted (browsers only allow sound after a tap) — tap 🔊 to hear Vector.
+- **Unavailable robot**: the card says so and disables the controls instead of showing a broken
+  image and "unavailable %".
 
 ### Popup with browser_mod
 
@@ -267,7 +277,11 @@ example, a Polish install gets Polish entity IDs). Check yours under **Settings 
 
 - **Face screen images** are not supported: on Vector 2.0 writing images to the face screen crashes
   the robot.
-- **Camera** runs at about 2 frames per second (MJPEG through the bridge).
+- **Camera** gives about 2 new pictures per second (a limit of Vector's SDK camera feed). The live
+  stream repeats the last picture at 10 fps, so it plays smoothly, but motion still updates about
+  twice a second.
+- **Microphone**: Vector's SDK audio feed is not documented in detail; if the sound plays too fast or
+  too slow, set the add-on option *Microphone sample rate* to the value its log shows.
 - **Camera on the charger**: while Vector sits on the charger the camera needs behavior control, so
   Vector holds still while someone watches the stream.
 - Long or endless audio streams are not supported on the speaker; the bridge plays whole files

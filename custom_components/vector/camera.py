@@ -1,10 +1,10 @@
-"""Vector camera: on-demand MJPEG stream (~2 fps) and a snapshot cached by the bridge."""
+"""Vector camera: live stream (WebRTC via go2rtc), MJPEG fallback and a cached snapshot."""
 
 from __future__ import annotations
 
 import aiohttp
 from aiohttp import web
-from homeassistant.components.camera import Camera
+from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_aiohttp_proxy_web, async_get_clientsession
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -37,6 +37,17 @@ class VectorCamera(VectorEntity, Camera):
         VectorEntity.__init__(self, client, esn, "camera")
         Camera.__init__(self)
         self._attr_unique_id = f"{esn}_camera"
+
+    @property
+    def supported_features(self) -> CameraEntityFeature:
+        # Add-on 0.2.0+: a real stream (H.264 + the robot's microphone) that HA's go2rtc serves
+        # as WebRTC. Older add-ons: MJPEG only (the frontend then reloads pictures).
+        if self._bridge.stream_url():
+            return CameraEntityFeature.STREAM
+        return CameraEntityFeature(0)
+
+    async def stream_source(self) -> str | None:
+        return self._bridge.stream_url()
 
     @property
     def is_streaming(self) -> bool:
