@@ -6,8 +6,10 @@
  *   speed: 120                       # mm/s forward (optional)
  *   hold: true                       # take control while the card is open (default: true)
  *
- * While open, the card holds behavior control (the "Manual control" switch, renewed every 5 min):
- * Vector stands still and waits for commands. When the card closes, control returns to Vector.
+ * Behavior control (the "Manual control" switch, renewed every 5 min) is taken while you steer:
+ * when the full-screen view opens and at the first drive in the tile; it is given back when the
+ * view closes, after a minute without driving, or when the page goes to the background — then
+ * Vector goes back to his own things. The "Hold" button keeps it on until pressed again.
  * Buttons are hold-to-drive: the card calls vector.move every 300 ms and the robot stops
  * 0.7 s after the last call (also when the network drops or the window closes); the card also
  * sends an explicit stop on every way a hold can end (release, lost pointer, closing the full
@@ -25,12 +27,15 @@
  */
 (function () {
   "use strict";
-  const CARD_VERSION = "0.2.0";
+  const CARD_VERSION = "0.2.2";
   const REPEAT_MS = 300;
   const HOLD_RENEW_MS = 5 * 60 * 1000; // the add-on holds control for at most 10 min
   const LIVE_IDLE_MS = 5 * 60 * 1000;
   const LIVE_GUARD_TICK_MS = 30 * 1000;
   const FEATURE_STREAM = 2; // CameraEntityFeature.STREAM
+  const HOLD_IDLE_MS = 60 * 1000; // give control back this long after the last drive (tile)
+  const LIVE_LOAD_MAX_MS = 60 * 1000; // loader until the first frame; then give up
+  const DRIVE_OFF_EVERY_MS = 8000; // "forward" on the charger asks to drive off at most this often
 
   const SPEEDS = { slow: 0.5, normal: 1, fast: 1.6 };
 
@@ -66,6 +71,9 @@
       listen_off: "Mute Vector",
       no_audio: "Sound needs the Vector add-on 0.2.0 or newer",
       tap_sound: "Tap 🔊 to hear Vector",
+      loading: "Connecting to Vector…",
+      live_failed: "Could not start the live view — try again",
+      driving_off: "Vector is driving off the charger…",
       live_paused: "Live view paused — tap ▶ to continue",
       rotate: "Turn your phone sideways",
       config_error: "Set camera: camera.vector",
@@ -103,6 +111,9 @@
       listen_off: "Wycisz Vectora",
       no_audio: "Dźwięk wymaga dodatku Vector 0.2.0 lub nowszego",
       tap_sound: "Dotknij 🔊, aby słyszeć Vectora",
+      loading: "Łączę z Vectorem…",
+      live_failed: "Nie udało się uruchomić podglądu — spróbuj ponownie",
+      driving_off: "Vector zjeżdża z ładowarki…",
       live_paused: "Podgląd wstrzymany — dotknij ▶, aby wznowić",
       rotate: "Obróć telefon poziomo",
       config_error: "Ustaw camera: camera.vector",
@@ -167,6 +178,19 @@
     .cam .play:active { transform:translate(-50%,-70%) scale(.94); }
     .cam .close { right:10px; top:10px; display:none; }
     .cam .full { right:10px; bottom:10px; }
+    .cam .mute { left:10px; bottom:10px; display:none; }
+    .cam.live-on .mute { display:flex; }
+    .cam .mute.on { background:rgba(28,230,160,.55); }
+    .cam-load { position:absolute; z-index:3; inset:0; display:none; flex-direction:column; align-items:center;
+      justify-content:center; gap:10px; color:#e3e8eb; font-size:.85em; pointer-events:none; }
+    .cam-load.show { display:flex; }
+    .spin { width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,.25);
+      border-top-color:#1ce6a0; animation:vector-spin .9s linear infinite; }
+    @keyframes vector-spin { to { transform:rotate(360deg); } }
+    .cam-toast { position:absolute; z-index:3; left:50%; bottom:14px; transform:translateX(-50%); max-width:80%;
+      padding:6px 12px; border-radius:10px; background:rgba(0,0,0,.72); color:#fff; font-size:.82em;
+      text-align:center; opacity:0; transition:opacity .2s; pointer-events:none; }
+    .cam-toast.show { opacity:1; }
     .cam.live-on .play { display:none; }
     .cam.live-on .close { display:flex; }
 
@@ -258,6 +282,13 @@
     .fs-play:active .fs-play-ic { transform:scale(.95); }
     .fs-play-lbl { font-size:.85rem; text-shadow:0 1px 4px #000; }
 
+    .fs-load { position:absolute; z-index:5; top:50%; left:50%; transform:translate(-50%,-50%); display:none;
+      flex-direction:column; align-items:center; gap:12px; font-size:.85rem; color:#e3e8eb;
+      text-shadow:0 1px 4px #000; pointer-events:none; }
+    .fs-load.show { display:flex; }
+    .spin { width:44px; height:44px; border-radius:50%; border:3px solid rgba(255,255,255,.25);
+      border-top-color:var(--accent); animation:vector-spin .9s linear infinite; }
+    @keyframes vector-spin { to { transform:rotate(360deg); } }
     .fs-off { position:absolute; z-index:5; top:50%; left:50%; transform:translate(-50%,-50%);
       display:none; flex-direction:column; align-items:center; gap:6px; text-align:center;
       padding:16px 22px; border-radius:16px; background:rgba(0,0,0,.55); max-width:60vw; }
@@ -352,16 +383,17 @@
             if (document.visibilityState === "hidden" || document.hidden) {
               this._releaseControls();
               this._pauseLive(false);
+              this._releaseAutoHold();
             }
           };
           this._onPageLeave = () => {
             this._releaseControls();
             this._pauseLive(false);
+            this._releaseAutoHold();
           };
         }
         document.addEventListener("visibilitychange", this._onPageHide);
         window.addEventListener("pagehide", this._onPageLeave);
-        if (this._built) this._autoHold();
       }
 
       disconnectedCallback() {
@@ -373,6 +405,7 @@
         this._stopLiveGuard();
         clearInterval(this._holdRenew);
         this._holdRenew = undefined;
+        clearTimeout(this._holdIdle);
         if (this._weHold) this._setHold(false);
       }
 
@@ -442,10 +475,25 @@
         }
       }
 
+      // Take control for steering (full screen opened, first drive in the tile).
       _autoHold() {
-        if (!this._config || this._config.hold === false || this._weHold || this._holding()) return;
-        if (this._offline()) return;
-        if (this._sibling("switch", "hold_control")) this._setHold(true);
+        if (!this._config || this._config.hold === false || this._offline()) return;
+        if (!this._weHold && !this._holding() && this._sibling("switch", "hold_control")) {
+          this._setHold(true);
+        }
+        this._holdTouch();
+      }
+
+      // Each drive extends the hold; in the tile it ends a minute after the last one.
+      _holdTouch() {
+        clearTimeout(this._holdIdle);
+        if (!this._weHold || this._manualHold || this._fsOpen) return;
+        this._holdIdle = setTimeout(() => this._releaseAutoHold(), HOLD_IDLE_MS);
+      }
+
+      _releaseAutoHold() {
+        clearTimeout(this._holdIdle);
+        if (this._weHold && !this._manualHold) this._setHold(false);
       }
 
       /* ---------------- tile ---------------- */
@@ -463,6 +511,9 @@
           `<button class="cam-btn play" title="${t("live")}">${icon("mdi:play")}</button>` +
           `<button class="cam-btn close" title="${t("close_live")}">${icon("mdi:close")}</button>` +
           `<button class="cam-btn full" title="${t("fullscreen")}">${icon("mdi:fullscreen")}</button>` +
+          `<button class="cam-btn mute" title="${t("listen_on")}">${icon("mdi:volume-off")}</button>` +
+          `<div class="cam-load"><span class="spin"></span><span>${t("loading")}</span></div>` +
+          `<div class="cam-toast"></div>` +
           `</div>` +
           `<div class="charger"><span>${t("on_charger")}</span>` +
           `<button data-press="drive_off_charger">${icon("mdi:arrow-up-box")}${t("drive_off")}</button></div>` +
@@ -505,13 +556,18 @@
         root.querySelectorAll(".speed button[data-speed]").forEach((btn) => {
           btn.addEventListener("click", () => this._setSpeed(btn.dataset.speed));
         });
-        root.querySelector(".speed .hold-t").addEventListener("click", () => this._setHold(!this._holding()));
+        root.querySelector(".speed .hold-t").addEventListener("click", () => {
+          const on = !this._holding();
+          this._manualHold = on; // the user's own hold is not released automatically
+          this._setHold(on);
+        });
         root.querySelectorAll(".actions button, .charger button").forEach((btn) => {
           btn.addEventListener("click", () => this._pressButton(btn.dataset.press));
         });
         root.querySelector(".cam .play").addEventListener("click", () => this._goLive());
         root.querySelector(".cam .close").addEventListener("click", () => this._stopLive());
         root.querySelector(".cam .full").addEventListener("click", () => this._openFull());
+        root.querySelector(".cam .mute").addEventListener("click", () => this._toggleTileMute());
         // A still that fails to load (no cached frame yet, robot offline) is simply hidden:
         // the placeholder stays instead of the browser's broken-image icon.
         this._still.addEventListener("load", () => this._setStill(true));
@@ -522,7 +578,6 @@
         }
         this._built = true;
         this._stillToken = undefined;
-        this._autoHold();
       }
 
       _wireHoldButtons(root) {
@@ -613,10 +668,6 @@
         const ht = this._root.querySelector(".speed .hold-t");
         ht.classList.toggle("on", held);
         ht.querySelector("span").textContent = this._t(held ? "holding" : "hold");
-        if (!this._triedHold && this._sibling("switch", "hold_control")) {
-          this._triedHold = true;
-          this._autoHold();
-        }
         if (this._fsOpen) this._updateFs();
       }
 
@@ -652,11 +703,19 @@
       _startHold(btn) {
         this._stopHold(true);
         if (this._offline()) return;
-        // "forward" on the charger = drive off it (Vector leaves the station himself)
+        // "forward" on the charger = drive off it (Vector leaves the station himself). Once per
+        // DRIVE_OFF_EVERY_MS: every tap used to send it again and the robot answered each one with
+        // BEHAVIOR_WONT_ACTIVATE_STATE (a stack of error toasts) while it was still busy.
         if (btn.dataset.drive === "fwd" && this._onCharger()) {
-          this._pressButton("drive_off_charger");
+          const now = Date.now();
+          if (now - (this._driveOffAt || 0) > DRIVE_OFF_EVERY_MS) {
+            this._driveOffAt = now;
+            this._pressButton("drive_off_charger");
+          }
+          this._notify(this._t("driving_off"));
           return;
         }
+        this._autoHold(); // steering takes behavior control
         let data;
         if (btn.dataset.drive) data = this._vector(btn.dataset.drive);
         else if (btn.dataset.head) data = { head: Number(btn.dataset.head) * 1.2 };
@@ -777,10 +836,20 @@
         this._cam.insertBefore(live, this._cam.querySelector(".ph")); // under the buttons
         this._live = live;
         this._cam.classList.add("live-on");
+        this._tileMuted = true;
+        this._setTileMuteIcon();
+        clearInterval(this._tileLoadTimer);
+        this._tileLoadTimer = this._watchLoading(live, this._cam.querySelector(".cam-load"), () => {
+          this._stopLive();
+          this._notify(this._t("live_failed"));
+        });
         this._startLiveGuard();
       }
 
       _stopLive() {
+        clearInterval(this._tileLoadTimer);
+        const load = this._cam && this._cam.querySelector(".cam-load");
+        if (load) load.classList.remove("show");
         if (this._live) {
           this._live.remove(); // HA closes the stream → go2rtc stops → the camera stops
           this._live = null;
@@ -845,6 +914,7 @@
           `</div>` +
           `<button class="fs-play" id="fs-play" title="${t("live")}">` +
           `<span class="fs-play-ic">${icon("mdi:play")}</span><span class="fs-play-lbl">${t("start_live")}</span></button>` +
+          `<div class="fs-load" id="fs-load"><span class="spin"></span><span>${t("loading")}</span></div>` +
           `<div class="fs-off">${icon("mdi:robot-off-outline")}<div>${t("unavailable")}</div>` +
           `<div class="h">${t("unavailable_hint")}</div></div>` +
           `<div class="fs-pad">` +
@@ -897,8 +967,13 @@
         const host = this._fsHost;
         this._stopLive(); // one viewer at a time
         this._fsOpen = true;
-        document.body.appendChild(host);
+        // Inside <home-assistant>, not <body>: Home Assistant's player (ha-camera-stream) takes its
+        // config and connection from Lit context, which only reaches that tree. In <body> it
+        // rendered nothing — the full screen stayed black although the robot was streaming.
+        const haRoot = document.querySelector("home-assistant");
+        (haRoot && haRoot.shadowRoot ? haRoot.shadowRoot : document.body).appendChild(host);
         host.style.display = "block";
+        this._autoHold(); // the control view steers: take behavior control while it is open
         // real full screen where the browser allows it (iPad, Android), requested within the tap
         let fsReq = null;
         try {
@@ -934,7 +1009,9 @@
         // Closing mid-drive (thumb on the pad, other hand on "back"): removing the view takes the
         // pointerup with it, so the hold is ended explicitly — the robot must not keep driving.
         this._releaseControls();
+        const wasOpen = this._fsOpen;
         this._fsOpen = false;
+        if (wasOpen) this._releaseAutoHold(); // closing the view gives control back to Vector
         clearInterval(this._clockTimer);
         this._clockTimer = null;
         clearInterval(this._fitTimer);
@@ -1032,10 +1109,13 @@
         if (this._fsLive || this._fsStarting || this._offline()) return;
         this._fsStarting = true;
         this._showPlay(false);
+        const fsLoad = this._fs("fs-load");
+        if (fsLoad) fsLoad.classList.add("show");
         const live = await this._createPlayer("cover");
         this._fsStarting = false;
         const host = this._fs("fs-cam");
         if (!live || !host || !this._fsOpen) {
+          if (fsLoad) fsLoad.classList.remove("show");
           if (this._fsOpen) this._showPlay(true);
           return;
         }
@@ -1046,10 +1126,18 @@
         this._applyMuteIcon();
         this._applyMute();
         if (this._hasStream()) this._fsToast(this._t("tap_sound"));
+        clearInterval(this._fsLoadTimer);
+        this._fsLoadTimer = this._watchLoading(live, fsLoad, () => {
+          this._fsStopLive();
+          this._fsToast(this._t("live_failed"));
+        });
         this._startLiveGuard();
       }
 
       _fsStopLive() {
+        clearInterval(this._fsLoadTimer);
+        const load = this._fs("fs-load");
+        if (load) load.classList.remove("show");
         if (this._fsLive) {
           this._fsLive.remove(); // HA closes the stream → go2rtc stops → the camera stops
           this._fsLive = null;
@@ -1059,6 +1147,66 @@
         this._showFsStill();
         if (this._fsOpen && !this._offline()) this._showPlay(true);
         if (!this._live) this._stopLiveGuard();
+      }
+
+      // Spinner until the player has a frame (video.readyState >= 2); MJPEG <img> needs none.
+      _watchLoading(live, loader, onFail) {
+        if (!loader) return undefined;
+        loader.classList.add("show");
+        const startedAt = Date.now();
+        const timer = setInterval(() => {
+          const playing = this._findVideos(live).some((v) => v.readyState >= 2 && v.videoWidth > 0);
+          if (playing || live.tagName === "IMG" || !live.isConnected) {
+            loader.classList.remove("show");
+            clearInterval(timer);
+          } else if (Date.now() - startedAt > LIVE_LOAD_MAX_MS) {
+            loader.classList.remove("show");
+            clearInterval(timer);
+            if (onFail) onFail();
+          }
+        }, 400);
+        return timer;
+      }
+
+      // Speaker on the tile (portrait has no full screen with 🔊). A tap = a gesture (iOS sound).
+      _toggleTileMute() {
+        if (!this._live) return;
+        if (!this._hasStream()) {
+          this._notify(this._t("no_audio"));
+          return;
+        }
+        this._tileMuted = this._tileMuted === false;
+        for (const v of this._findVideos(this._live)) {
+          v.muted = this._tileMuted;
+          if (!this._tileMuted) {
+            v.volume = 1;
+            const p = v.play && v.play();
+            if (p && p.catch) p.catch(() => {});
+          }
+        }
+        if ("muted" in this._live) this._live.muted = this._tileMuted;
+        this._setTileMuteIcon();
+      }
+
+      _setTileMuteIcon() {
+        const b = this._cam && this._cam.querySelector(".mute");
+        if (!b) return;
+        b.innerHTML = icon(this._tileMuted === false ? "mdi:volume-high" : "mdi:volume-off");
+        b.classList.toggle("on", this._tileMuted === false);
+      }
+
+      // A message where the user looks: the full screen or a bubble on the tile's camera.
+      _notify(msg) {
+        if (this._fsOpen) {
+          this._fsToast(msg);
+          return;
+        }
+        const el = this._cam && this._cam.querySelector(".cam-toast");
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.add("show");
+        clearTimeout(this._tileToastTimer);
+        this._tileToastTimer = setTimeout(() => el.classList.remove("show"), 2500);
       }
 
       _findVideos(el, out = []) {

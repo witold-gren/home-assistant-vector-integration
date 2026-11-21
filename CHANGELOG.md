@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.2 - 2026-11-21
+
+- **Fix: the full-screen view stayed black.** Home Assistant 2026's camera player takes its config
+  and connection from Lit context, which only reaches elements inside `<home-assistant>`; the
+  full-screen view lived in `<body>`, so the player rendered nothing. It now lives inside
+  `<home-assistant>` (checked on a real Home Assistant).
+- **Live view that keeps playing.** Before handing the browser's WebRTC offer to Home Assistant's
+  go2rtc, the camera asks the add-on to start the stream (`warm_stream`, add-on 0.2.2); the
+  browser's ICE candidates sent meanwhile are kept and forwarded. No HLS fallback any more (it
+  failed the same way).
+- **Card:**
+  - Loader until the first frame.
+  - 🔊 button on the tile, so sound works in portrait too.
+  - Behavior control is taken while you steer (full screen, first drive in the tile) and given
+    back when the view closes, a minute after the last drive, or when the page is hidden —
+    instead of for as long as the card is open.
+  - "Forward" on the charger asks Vector to drive off at most every 8 s, with a message (every tap
+    used to fail with BEHAVIOR_WONT_ACTIVATE_STATE).
+
 ## 0.2.1 - 2026-11-21
 
 - Polish translation of the custom voice command form used `{utwór}` instead of `{song}`; Home

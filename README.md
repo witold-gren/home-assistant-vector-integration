@@ -216,9 +216,13 @@ camera: camera.vector
 - **Hold to drive**: the arrows, head and lift buttons move Vector only while pressed. The card
   repeats `vector.move` every 300 ms and Vector stops 0.7 s after the last call, so he also stops
   when the network drops or the window closes. **STOP** stops everything.
-- **Auto hold**: while the card is open it turns on the *Manual control* switch, so Vector stands
-  still and waits for commands. The hold is renewed every 5 minutes and released when the card
-  closes. Use `hold: false` to disable it, or the **Hold** toggle on the card.
+- **Control while you steer**: the full-screen view turns on the *Manual control* switch while it
+  is open (Vector stands still and waits for commands), and so does the first drive in the tile;
+  control is given back when the view closes, a minute after the last drive in the tile, or when
+  the page goes to the background. The **Hold** toggle keeps it on until pressed again; `hold: false`
+  disables the automatic part.
+- **Loader**: a spinner shows until the first frame arrives (Vector may need a few seconds, longer
+  on the charger). The tile has its own 🔊 button while the live view runs.
 - **On the charger** a bar with **Drive off charger** appears, and the forward arrow drives Vector
   off the charger.
 - **Live camera**: tap ▶ to watch. With the Vector add-on 0.2.0 or newer this is real video

@@ -189,6 +189,11 @@ class VectorClient:
         """URL of a bridge HTTP resource (MJPEG, photos)."""
         return f"{self._base}{path}"
 
+    async def warm_stream(self) -> None:
+        """Have the add-on start the live stream before Home Assistant's go2rtc opens it (that
+        go2rtc waits only 5 s; Vector on the charger needs longer). Add-on 0.2.2+."""
+        await self.command("warm_stream")
+
     def stream_url(self) -> str | None:
         """RTSP URL of the add-on's live stream (go2rtc), or None when the add-on has none.
 

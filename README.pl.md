@@ -223,9 +223,13 @@ camera: camera.vector
   wtedy, gdy są wciśnięte. Karta powtarza `vector.move` co 300 ms, a Vector zatrzymuje się 0,7 s
   po ostatnim wywołaniu, więc staje także wtedy, gdy zerwie się połączenie albo zamkniesz okno.
   **STOP** zatrzymuje wszystko.
-- **Automatyczne trzymanie**: gdy karta jest otwarta, włącza przełącznik *Ręczne sterowanie*, więc
-  Vector stoi w miejscu i czeka na polecenia. Trzymanie jest odnawiane co 5 minut i zwalniane po
-  zamknięciu karty. Wyłączysz je przez `hold: false` albo przełącznikiem **Trzymaj** na karcie.
+- **Kontrola na czas sterowania**: widok pełnoekranowy włącza przełącznik *Ręczne sterowanie*, dopóki
+  jest otwarty (Vector stoi i czeka na polecenia); tak samo pierwsza jazda w kafelku. Kontrola wraca
+  do Vectora po zamknięciu widoku, minutę po ostatniej jeździe w kafelku albo gdy strona przejdzie
+  w tło. Przycisk **Trzymaj** utrzymuje ją do ponownego naciśnięcia; `hold: false` wyłącza część
+  automatyczną.
+- **Wskaźnik ładowania**: kręciołek widać do pierwszej klatki (Vector potrzebuje kilku sekund, na
+  ładowarce dłużej). Kafelek ma własny przycisk 🔊, gdy działa podgląd na żywo.
 - **Na ładowarce** pojawia się pasek z przyciskiem **Zjedź z ładowarki**, a strzałka do przodu
   zjeżdża Vectorem z ładowarki.
 - **Kamera na żywo**: dotknij ▶, aby oglądać. Z dodatkiem Vector 0.2.0 lub nowszym to prawdziwe

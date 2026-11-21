@@ -221,3 +221,83 @@ def test_removing_the_card_removes_the_fullscreen_view(page) -> None:
     _open_fullscreen(page)
     page.evaluate("card.remove()")
     assert page.locator("div.vector-fs-host").count() == 0
+
+
+TILE = "document.querySelector('vector-control-card').shadowRoot"
+
+
+def _video_ready(page, root: str) -> None:
+    page.evaluate(
+        f"""() => {{
+          const v = {root}.querySelector('ha-camera-stream').shadowRoot.querySelector('video');
+          Object.defineProperty(v, 'readyState', {{value: 4}});
+          Object.defineProperty(v, 'videoWidth', {{value: 800}});
+        }}"""
+    )
+
+
+def test_loader_until_the_first_frame(page) -> None:
+    page.locator(".cam .play").click()
+    page.wait_for_function("window.streams === 1")
+    assert page.locator(".cam .cam-load").is_visible()
+    _video_ready(page, TILE)
+    page.wait_for_function(f"!{TILE}.querySelector('.cam-load').classList.contains('show')")
+
+
+def test_tile_speaker(page) -> None:
+    page.locator(".cam .play").click()
+    page.wait_for_function("window.streams === 1")
+    video = f"{TILE}.querySelector('ha-camera-stream').shadowRoot.querySelector('video')"
+    assert page.evaluate(f"{video}.muted") is True
+    page.locator(".cam .mute").click()
+    assert page.evaluate(f"{video}.muted") is False
+
+
+def test_control_is_taken_only_while_steering(page) -> None:
+    """Not on opening the card any more: the full screen takes it, closing gives it back."""
+    assert [c for c in _calls(page) if c["domain"] == "switch"] == []
+    _open_fullscreen(page)
+    sw = [c for c in _calls(page) if c["domain"] == "switch"]
+    assert sw[-1]["service"] == "turn_on"
+    page.locator("#fs-back").click()
+    sw = [c for c in _calls(page) if c["domain"] == "switch"]
+    assert sw[-1]["service"] == "turn_off"
+
+
+def test_tile_drive_takes_control(page) -> None:
+    _press(page, '.dpad button[data-drive="left"]')
+    page.wait_for_timeout(200)
+    page.mouse.up()
+    sw = [c["service"] for c in _calls(page) if c["domain"] == "switch"]
+    assert "turn_on" in sw
+
+
+def test_forward_on_the_charger_asks_once(page) -> None:
+    """Every tap used to send drive_off_charger: a stack of BEHAVIOR_WONT_ACTIVATE errors."""
+    page.evaluate(
+        """() => {
+          hass.states['binary_sensor.vector_on_charger'].state = 'on';
+          card.hass = hass;
+        }"""
+    )
+    for _ in range(4):
+        page.locator('.dpad button[data-drive="fwd"]').dispatch_event("pointerdown")
+        page.locator('.dpad button[data-drive="fwd"]').dispatch_event("pointerup")
+    presses = [c for c in _calls(page, "press")]
+    assert len(presses) == 1
+    assert presses[0]["data"] == {"entity_id": "button.vector_drive_off_charger"}
+    assert "zjeżdża" in page.locator(".cam-toast").inner_text()
+
+
+def test_fullscreen_lives_inside_home_assistant_when_present(page) -> None:
+    page.evaluate(
+        """() => {
+          const ha = document.createElement('home-assistant');
+          ha.attachShadow({mode: 'open'});
+          document.body.appendChild(ha);
+        }"""
+    )
+    page.locator(".cam .full").click()
+    assert page.evaluate(
+        "!!document.querySelector('home-assistant').shadowRoot.querySelector('.vector-fs-host')"
+    )
