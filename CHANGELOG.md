@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.3 - 2026-11-21
+
+- **Talk through Vector:** hold 🎙 (in the full-screen view and on the tile) and speak; the
+  recording plays on Vector's speaker right away (`/api/vector/intercom/<camera>`).
+- No "listen" button any more: Vector's firmware sends a 1 kHz test tone instead of its microphone
+  to the SDK (`sdkComponent.cpp`), so the live view only beeped.
+- **Fix (iPhone): buttons over the live picture vanished** — overlays now sit on their own layers
+  above the `<video>`.
+
 ## 0.2.2 - 2026-11-21
 
 - **Fix: the full-screen view stayed black.** Home Assistant 2026's camera player takes its config

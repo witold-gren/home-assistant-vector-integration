@@ -28,6 +28,24 @@
   });
   window.loadCardHelpers = async () => ({ createCardElement: () => document.createElement("div") });
 
+  // Fake microphone: getUserMedia resolves only when the test says so (permission prompt).
+  window.micGrants = [];
+  window.recorders = 0;
+  window.stoppedTracks = 0;
+  window.fetches = [];
+  Object.defineProperty(window, "isSecureContext", { value: true });
+  navigator.mediaDevices.getUserMedia = () => new Promise((resolve) => {
+    window.micGrants.push(() => resolve({ getTracks: () => [{ stop: () => { window.stoppedTracks += 1; } }] }));
+  });
+  window.MediaRecorder = class {
+    constructor() { window.recorders += 1; this.mimeType = "audio/mp4"; }
+    start() {}
+    stop() {
+      if (this.ondataavailable) this.ondataavailable({ data: new Blob([new Uint8Array(4000)]) });
+      if (this.onstop) this.onstop();
+    }
+  };
+
   const DEV = "dev-vector";
   const reg = (id, key) => ({ entity_id: id, device_id: DEV, platform: "vector", translation_key: key });
   const st = (id, state, attributes = {}) => ({ entity_id: id, state, attributes });
@@ -63,6 +81,10 @@
           "button.vector_go_to_charger": st("button.vector_go_to_charger", "unknown"),
           "button.vector_refresh_camera_image": st("button.vector_refresh_camera_image", "unknown"),
         },
+    fetchWithAuth(url, opts) {
+      window.fetches.push({ url, type: opts && opts.headers && opts.headers["Content-Type"] });
+      return Promise.resolve({ ok: true, json: async () => ({ message: "ok" }) });
+    },
     callService(domain, service, data) {
       window.calls.push({ domain, service, data, t: performance.now() });
       return Promise.resolve();

@@ -17,7 +17,7 @@ from .api import VectorAuthError, VectorClient, VectorError
 from .const import BRIDGE_EVENTS, DOMAIN
 from .frontend import async_register_card
 from .services import async_setup_services
-from .views import VectorPhotoView
+from .views import VectorIntercomView, VectorPhotoView
 from .voice import VoiceRouter
 
 PLATFORMS: list[Platform] = [
@@ -53,6 +53,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Domain services (they act on the robot selected by device)."""
     async_setup_services(hass)
     hass.http.register_view(VectorPhotoView(hass))
+    hass.http.register_view(VectorIntercomView(hass))
     await async_register_card(hass)
     return True
 

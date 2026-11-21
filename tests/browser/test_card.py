@@ -156,7 +156,7 @@ def test_fullscreen_layout_pad_left_lift_and_listen_right(page) -> None:
     # nothing overlaps: pad and the bottom pill are apart
     assert pad["x"] + pad["width"] < bottom["x"] or pad["y"] + pad["height"] < bottom["y"]
     assert page.locator('.fs-rail button[data-lift="1"]').is_visible()
-    assert page.locator(".fs-rail #fs-mute").is_visible()
+    assert page.locator(".fs-rail #fs-talk").is_visible()
 
 
 def test_fullscreen_lift_hold_and_closing_mid_drive_stops(page) -> None:
@@ -172,22 +172,6 @@ def test_fullscreen_lift_hold_and_closing_mid_drive_stops(page) -> None:
     page.evaluate("card._closeFull()")  # "back" tapped with the other hand
     _assert_stopped(page)
     page.mouse.up()
-
-
-def test_fullscreen_live_starts_muted_and_listen_toggles_sound(page) -> None:
-    _open_fullscreen(page)
-    page.locator("#fs-play").click()
-    page.wait_for_function("window.streams === 1")
-    video = (
-        "document.querySelector('.vector-fs-host').shadowRoot"
-        ".querySelector('ha-camera-stream').shadowRoot.querySelector('video')"
-    )
-    assert page.evaluate(f"{video}.muted") is True  # autoplay works muted only (iOS)
-    page.locator("#fs-mute").click()
-    assert page.evaluate(f"{video}.muted") is False
-    assert "listening" in page.locator("#fs-mute").get_attribute("class")
-    page.locator("#fs-mute").click()
-    assert page.evaluate(f"{video}.muted") is True
 
 
 def test_fullscreen_speed_and_charger_buttons(page) -> None:
@@ -244,15 +228,6 @@ def test_loader_until_the_first_frame(page) -> None:
     page.wait_for_function(f"!{TILE}.querySelector('.cam-load').classList.contains('show')")
 
 
-def test_tile_speaker(page) -> None:
-    page.locator(".cam .play").click()
-    page.wait_for_function("window.streams === 1")
-    video = f"{TILE}.querySelector('ha-camera-stream').shadowRoot.querySelector('video')"
-    assert page.evaluate(f"{video}.muted") is True
-    page.locator(".cam .mute").click()
-    assert page.evaluate(f"{video}.muted") is False
-
-
 def test_control_is_taken_only_while_steering(page) -> None:
     """Not on opening the card any more: the full screen takes it, closing gives it back."""
     assert [c for c in _calls(page) if c["domain"] == "switch"] == []
@@ -301,3 +276,36 @@ def test_fullscreen_lives_inside_home_assistant_when_present(page) -> None:
     assert page.evaluate(
         "!!document.querySelector('home-assistant').shadowRoot.querySelector('.vector-fs-host')"
     )
+
+
+def _hold_talk(page, selector: str) -> None:
+    btn = page.locator(selector)
+    btn.scroll_into_view_if_needed()
+    box = btn.bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    page.mouse.down()
+
+
+def test_tile_talk_sends_the_recording_to_the_robot(page) -> None:
+    """Vector's SDK has no real microphone feed (1 kHz test tone), so the card talks instead."""
+    _hold_talk(page, ".actions .talk")
+    page.wait_for_function("window.micGrants.length === 1")
+    page.evaluate("window.micGrants[0]()")
+    page.wait_for_function("window.recorders === 1")
+    page.mouse.up()
+    page.wait_for_function("window.fetches.length === 1")
+    sent = page.evaluate("window.fetches[0]")
+    assert sent == {"url": "/api/vector/intercom/camera.vector", "type": "audio/mp4"}
+    page.wait_for_function(f"{TILE}.querySelector('.cam-toast').textContent.includes('mówi')")
+
+
+def test_fullscreen_talk_button_and_release_before_permission(page) -> None:
+    _open_fullscreen(page)
+    _hold_talk(page, "#fs-talk")
+    page.wait_for_function("window.micGrants.length === 1")
+    page.mouse.up()  # released before the permission prompt was answered
+    page.evaluate("window.micGrants[0]()")
+    page.wait_for_timeout(100)
+    assert page.evaluate("window.recorders") == 0
+    assert page.evaluate("window.stoppedTracks") == 1
+    assert page.evaluate("window.fetches.length") == 0

@@ -27,7 +27,7 @@
  */
 (function () {
   "use strict";
-  const CARD_VERSION = "0.2.2";
+  const CARD_VERSION = "0.2.3";
   const REPEAT_MS = 300;
   const HOLD_RENEW_MS = 5 * 60 * 1000; // the add-on holds control for at most 10 min
   const LIVE_IDLE_MS = 5 * 60 * 1000;
@@ -71,6 +71,13 @@
       listen_off: "Mute Vector",
       no_audio: "Sound needs the Vector add-on 0.2.0 or newer",
       tap_sound: "Tap 🔊 to hear Vector",
+      talk: "Talk through Vector",
+      talk_hold: "Hold the microphone and speak",
+      talk_short: "Too short — hold the microphone and speak",
+      talk_sending: "Sending to Vector…",
+      talk_sent: "Vector says it now",
+      talk_failed: "Could not send",
+      talk_https: "The microphone needs HTTPS",
       loading: "Connecting to Vector…",
       live_failed: "Could not start the live view — try again",
       driving_off: "Vector is driving off the charger…",
@@ -111,6 +118,13 @@
       listen_off: "Wycisz Vectora",
       no_audio: "Dźwięk wymaga dodatku Vector 0.2.0 lub nowszego",
       tap_sound: "Dotknij 🔊, aby słyszeć Vectora",
+      talk: "Mów przez Vectora",
+      talk_hold: "Przytrzymaj mikrofon i mów",
+      talk_short: "Za krótko — przytrzymaj mikrofon i mów",
+      talk_sending: "Wysyłam do Vectora…",
+      talk_sent: "Vector już to mówi",
+      talk_failed: "Nie udało się wysłać",
+      talk_https: "Mikrofon wymaga HTTPS",
       loading: "Łączę z Vectorem…",
       live_failed: "Nie udało się uruchomić podglądu — spróbuj ponownie",
       driving_off: "Vector zjeżdża z ładowarki…",
@@ -169,25 +183,27 @@
     /* robot available: ▶ in the middle, the text below it (no icon under the button) */
     .cam.can-play .ph .ph-ic { display:none !important; }
     .cam.can-play .ph { justify-content:flex-end; padding-bottom:14%; }
+    /* iOS paints <video> above overlays that have no layer of their own (the buttons vanished and
+       took no taps): the video stays on layer 0, the overlays get their own layers above it. */
+    .cam .live { z-index:0; }
+    .cam .ph, .cam .cam-btn, .cam-load, .cam-toast { -webkit-transform:translateZ(0); transform:translateZ(0); }
     .cam .cam-btn { position:absolute; z-index:2; width:42px; height:42px; border-radius:50%;
       background:rgba(0,0,0,.45); color:#fff; }
     .cam .cam-btn ha-icon { --mdc-icon-size:24px; }
-    .cam .play { left:50%; top:50%; width:64px; height:64px; transform:translate(-50%,-70%);
+    .cam .play { left:50%; top:50%; width:64px; height:64px; transform:translate(-50%,-70%) translateZ(0);
       background:rgba(28,230,160,.30); border:2px solid rgba(255,255,255,.9); box-shadow:0 0 22px rgba(28,230,160,.35); }
     .cam .play ha-icon { --mdc-icon-size:36px; }
-    .cam .play:active { transform:translate(-50%,-70%) scale(.94); }
+    .cam .play:active { transform:translate(-50%,-70%) translateZ(0) scale(.94); }
     .cam .close { right:10px; top:10px; display:none; }
     .cam .full { right:10px; bottom:10px; }
-    .cam .mute { left:10px; bottom:10px; display:none; }
-    .cam.live-on .mute { display:flex; }
-    .cam .mute.on { background:rgba(28,230,160,.55); }
+    .actions button.talk.recording { background:var(--error-color,#db4437); color:#fff; transform:scale(.95); }
     .cam-load { position:absolute; z-index:3; inset:0; display:none; flex-direction:column; align-items:center;
       justify-content:center; gap:10px; color:#e3e8eb; font-size:.85em; pointer-events:none; }
     .cam-load.show { display:flex; }
     .spin { width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,.25);
       border-top-color:#1ce6a0; animation:vector-spin .9s linear infinite; }
     @keyframes vector-spin { to { transform:rotate(360deg); } }
-    .cam-toast { position:absolute; z-index:3; left:50%; bottom:14px; transform:translateX(-50%); max-width:80%;
+    .cam-toast { position:absolute; z-index:3; left:50%; bottom:14px; transform:translateX(-50%) translateZ(0); max-width:80%;
       padding:6px 12px; border-radius:10px; background:rgba(0,0,0,.72); color:#fff; font-size:.82em;
       text-align:center; opacity:0; transition:opacity .2s; pointer-events:none; }
     .cam-toast.show { opacity:1; }
@@ -255,7 +271,9 @@
       --video-max-height:none; }
     .fs-grad { position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg,
       rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 24%, rgba(0,0,0,0) 70%, rgba(0,0,0,.55) 100%); }
-    .fs-ui { position:absolute; inset:0; }
+    /* The whole control layer above the video (iOS: the <video> otherwise covers the buttons). */
+    .fs-cam { z-index:0; }
+    .fs-ui { position:absolute; inset:0; z-index:2; -webkit-transform:translateZ(0); transform:translateZ(0); }
 
     .fs-rotate { position:absolute; inset:0; z-index:10; display:none; flex-direction:column;
       align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center;
@@ -316,9 +334,8 @@
       justify-content:space-between; gap:8px; }
     .fs-ic { width:46px; height:46px; border-radius:50%; background:rgba(0,0,0,.36); }
     .fs-ic ha-icon { --mdc-icon-size:24px; }
-    .fs-mute.muted { color:#ff6a5f; }
-    .fs-mute.listening { background:rgba(28,230,160,.4); }
-    .fs-mute.disabled { opacity:.4; }
+    .fs-talk { width:52px; height:52px; touch-action:none; transition:background .1s, transform .1s; }
+    .fs-talk.recording { background:#e5483d; transform:scale(.94); box-shadow:0 0 18px rgba(229,72,61,.7); }
     .fs-group { display:flex; flex-direction:column; align-items:center; gap:4px; }
     .fs-lbl { font-size:.68rem; color:#e3e8eb; text-shadow:0 1px 3px #000; }
     .fs-pill { width:56px; display:flex; flex-direction:column; overflow:hidden; border-radius:999px;
@@ -511,7 +528,7 @@
           `<button class="cam-btn play" title="${t("live")}">${icon("mdi:play")}</button>` +
           `<button class="cam-btn close" title="${t("close_live")}">${icon("mdi:close")}</button>` +
           `<button class="cam-btn full" title="${t("fullscreen")}">${icon("mdi:fullscreen")}</button>` +
-          `<button class="cam-btn mute" title="${t("listen_on")}">${icon("mdi:volume-off")}</button>` +
+
           `<div class="cam-load"><span class="spin"></span><span>${t("loading")}</span></div>` +
           `<div class="cam-toast"></div>` +
           `</div>` +
@@ -543,6 +560,7 @@
           `<button data-press="drive_off_charger">${icon("mdi:arrow-up-box")}${t("drive_off")}</button>` +
           `<button data-press="drive_on_charger">${icon("mdi:battery-charging")}${t("to_charger")}</button>` +
           `<button data-press="refresh_camera">${icon("mdi:camera-retake")}${t("snapshot")}</button>` +
+          `<button class="talk" title="${t("talk_hold")}">${icon("mdi:microphone")}${t("talk")}</button>` +
           `</div>` +
           `</ha-card>`;
         this._root = root;
@@ -567,7 +585,7 @@
         root.querySelector(".cam .play").addEventListener("click", () => this._goLive());
         root.querySelector(".cam .close").addEventListener("click", () => this._stopLive());
         root.querySelector(".cam .full").addEventListener("click", () => this._openFull());
-        root.querySelector(".cam .mute").addEventListener("click", () => this._toggleTileMute());
+        this._wireTalk(root.querySelector(".actions .talk"));
         // A still that fails to load (no cached frame yet, robot offline) is simply hidden:
         // the placeholder stays instead of the browser's broken-image icon.
         this._still.addEventListener("load", () => this._setStill(true));
@@ -747,6 +765,7 @@
       // Every way a hold can end without a pointerup lands here: the robot must stop.
       _releaseControls() {
         this._stopHold();
+        if (this._talkRec || this._talkWanted) this._talkEnd();
       }
 
       _callRaw(domain, service, data) {
@@ -837,7 +856,6 @@
         this._live = live;
         this._cam.classList.add("live-on");
         this._tileMuted = true;
-        this._setTileMuteIcon();
         clearInterval(this._tileLoadTimer);
         this._tileLoadTimer = this._watchLoading(live, this._cam.querySelector(".cam-load"), () => {
           this._stopLive();
@@ -925,7 +943,7 @@
           `<span></span><button class="fs-btn hold" data-drive="back">${icon("mdi:chevron-down")}</button><span></span>` +
           `</div>` +
           `<div class="fs-rail">` +
-          `<button class="fs-ic fs-mute muted" id="fs-mute" title="${t("listen_on")}">${icon("mdi:volume-off")}</button>` +
+          `<button class="fs-ic fs-talk" id="fs-talk" title="${t("talk_hold")}">${icon("mdi:microphone")}</button>` +
           `<div class="fs-group"><span class="fs-lbl">${t("head")}</span><div class="fs-pill">` +
           `<button class="hold" data-head="1">${icon("mdi:arrow-up-bold")}</button>` +
           `<button class="hold" data-head="-1">${icon("mdi:arrow-down-bold")}</button></div></div>` +
@@ -950,7 +968,7 @@
         this._fs("fs-back").addEventListener("click", () => this._closeFull());
         this._fs("fs-stop").addEventListener("click", () => this._stopNow());
         this._fs("fs-play").addEventListener("click", () => this._fsPlay());
-        this._fs("fs-mute").addEventListener("click", () => this._toggleMute());
+        this._wireTalk(this._fs("fs-talk"));
         root.querySelectorAll(".fs-bottom button[data-speed]").forEach((b) => {
           b.addEventListener("click", () => this._setSpeed(b.dataset.speed));
         });
@@ -982,7 +1000,6 @@
           /* iPhone: no Fullscreen API, the overlay still covers the screen */
         }
         this._fsMuted = true;
-        this._applyMuteIcon();
         this._showPlay(true);
         this._showFsStill();
         this._onOrient = () => this._updateFsOrientation();
@@ -1060,11 +1077,6 @@
         this._fsRoot.querySelectorAll(".fs-bottom button[data-speed]").forEach((btn) => {
           btn.classList.toggle("on", btn.dataset.speed === this._speed);
         });
-        const mute = this._fs("fs-mute");
-        if (mute) {
-          mute.classList.toggle("disabled", !this._hasStream());
-          mute.title = this._hasStream() ? (this._fsMuted ? this._t("listen_on") : this._t("listen_off")) : this._t("no_audio");
-        }
       }
 
       _updateFsOrientation() {
@@ -1123,9 +1135,7 @@
         host.appendChild(live);
         this._fsLive = live;
         this._fsMuted = true;
-        this._applyMuteIcon();
         this._applyMute();
-        if (this._hasStream()) this._fsToast(this._t("tap_sound"));
         clearInterval(this._fsLoadTimer);
         this._fsLoadTimer = this._watchLoading(live, fsLoad, () => {
           this._fsStopLive();
@@ -1143,7 +1153,6 @@
           this._fsLive = null;
         }
         this._fsMuted = true;
-        this._applyMuteIcon();
         this._showFsStill();
         if (this._fsOpen && !this._offline()) this._showPlay(true);
         if (!this._live) this._stopLiveGuard();
@@ -1168,33 +1177,6 @@
         return timer;
       }
 
-      // Speaker on the tile (portrait has no full screen with 🔊). A tap = a gesture (iOS sound).
-      _toggleTileMute() {
-        if (!this._live) return;
-        if (!this._hasStream()) {
-          this._notify(this._t("no_audio"));
-          return;
-        }
-        this._tileMuted = this._tileMuted === false;
-        for (const v of this._findVideos(this._live)) {
-          v.muted = this._tileMuted;
-          if (!this._tileMuted) {
-            v.volume = 1;
-            const p = v.play && v.play();
-            if (p && p.catch) p.catch(() => {});
-          }
-        }
-        if ("muted" in this._live) this._live.muted = this._tileMuted;
-        this._setTileMuteIcon();
-      }
-
-      _setTileMuteIcon() {
-        const b = this._cam && this._cam.querySelector(".mute");
-        if (!b) return;
-        b.innerHTML = icon(this._tileMuted === false ? "mdi:volume-high" : "mdi:volume-off");
-        b.classList.toggle("on", this._tileMuted === false);
-      }
-
       // A message where the user looks: the full screen or a bubble on the tile's camera.
       _notify(msg) {
         if (this._fsOpen) {
@@ -1207,6 +1189,115 @@
         el.classList.add("show");
         clearTimeout(this._tileToastTimer);
         this._tileToastTimer = setTimeout(() => el.classList.remove("show"), 2500);
+      }
+
+      /* ---------------- intercom: hold the microphone and speak ---------------- */
+
+      // Vector's SDK has no real microphone feed (the firmware sends a 1 kHz test tone), so there
+      // is no "listen"; talking works: the recording plays on Vector's speaker right away.
+      _wireTalk(btn) {
+        if (!btn) return;
+        btn.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          try {
+            btn.setPointerCapture(e.pointerId);
+          } catch (_) {
+            /* synthetic pointer */
+          }
+          this._talkStart(btn);
+        });
+        const end = (e) => {
+          if (e) e.preventDefault();
+          this._talkEnd();
+        };
+        btn.addEventListener("pointerup", end);
+        btn.addEventListener("pointercancel", end);
+        btn.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
+
+      async _talkStart(btn) {
+        if (this._talkWanted || this._talkRec || this._offline()) return;
+        this._talkBtn = btn;
+        if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          this._notify(this._t("talk_https"));
+          return;
+        }
+        this._talkWanted = true;
+        try {
+          this._talkChunks = [];
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          });
+          if (!this._talkWanted) {
+            // released before the browser gave the microphone (permission prompt): don't record
+            stream.getTracks().forEach((t) => t.stop());
+            return;
+          }
+          this._talkStream = stream;
+          this._talkRec = new MediaRecorder(stream);
+          this._talkRec.ondataavailable = (e) => {
+            if (e.data && e.data.size) this._talkChunks.push(e.data);
+          };
+          this._talkRec.start();
+          btn.classList.add("recording");
+        } catch (_) {
+          this._talkWanted = false;
+          this._talkCleanup();
+          this._notify(this._t("talk_failed"));
+        }
+      }
+
+      async _talkEnd() {
+        this._talkWanted = false;
+        const rec = this._talkRec;
+        if (this._talkBtn) this._talkBtn.classList.remove("recording");
+        if (!rec) return;
+        this._talkRec = null;
+        await new Promise((res) => {
+          rec.onstop = res;
+          try {
+            rec.stop();
+          } catch (_) {
+            res();
+          }
+        });
+        const type = rec.mimeType || "audio/webm";
+        const blob = new Blob(this._talkChunks || [], { type });
+        this._talkCleanup();
+        if (!this._hass) return;
+        if (blob.size < 800) {
+          this._notify(this._t("talk_short"));
+          return;
+        }
+        this._notify(this._t("talk_sending"));
+        try {
+          const r = await this._hass.fetchWithAuth(`/api/vector/intercom/${this._config.camera}`, {
+            method: "POST",
+            headers: { "Content-Type": type },
+            body: blob,
+          });
+          let msg = "";
+          if (!r.ok) {
+            try {
+              msg = (await r.json()).message || "";
+            } catch (_) {
+              /* no body */
+            }
+          }
+          this._notify(r.ok ? this._t("talk_sent") : `${this._t("talk_failed")}${msg ? ": " + msg : ""}`);
+        } catch (_) {
+          this._notify(this._t("talk_failed"));
+        }
+      }
+
+      _talkCleanup() {
+        try {
+          if (this._talkStream) this._talkStream.getTracks().forEach((t) => t.stop());
+        } catch (_) {
+          /* ignore */
+        }
+        this._talkStream = null;
+        this._talkChunks = null;
       }
 
       _findVideos(el, out = []) {
@@ -1237,38 +1328,6 @@
           }
           if (this._fsMuted && !v.muted) v.muted = true;
         }
-      }
-
-      _applyMuteIcon() {
-        const b = this._fs("fs-mute");
-        if (!b) return;
-        b.innerHTML = icon(this._fsMuted ? "mdi:volume-off" : "mdi:volume-high");
-        b.classList.toggle("muted", this._fsMuted);
-        b.classList.toggle("listening", !this._fsMuted);
-        b.title = this._fsMuted ? this._t("listen_on") : this._t("listen_off");
-      }
-
-      // Called from a tap (a user gesture): the only way iOS lets a video play sound.
-      _toggleMute() {
-        if (!this._hasStream()) {
-          this._fsToast(this._t("no_audio"));
-          return;
-        }
-        if (!this._fsLive) {
-          this._fsToast(this._t("no_preview_hint"));
-          return;
-        }
-        this._fsMuted = !this._fsMuted;
-        for (const v of this._findVideos(this._fsLive)) {
-          v.muted = this._fsMuted;
-          if (!this._fsMuted) {
-            v.volume = 1;
-            const p = v.play && v.play();
-            if (p && p.catch) p.catch(() => {});
-          }
-        }
-        if ("muted" in this._fsLive) this._fsLive.muted = this._fsMuted;
-        this._applyMuteIcon();
       }
 
       _fsToast(msg) {
