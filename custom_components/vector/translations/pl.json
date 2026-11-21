@@ -734,7 +734,7 @@
             "animation": "Grupa animacji"
           },
           "data_description": {
-            "sentences": "Jedno w linii, składnia jak w Assist: [opcjonalne], (to|tamto), {slot} = dowolny tekst, np. „dobranoc [vector]”, „zagraj {utwór}”.",
+            "sentences": "Jedno w linii, składnia jak w Assist: [opcjonalne], (to|tamto), {slot} = dowolny tekst, np. „dobranoc [vector]”, „zagraj {song}”.",
             "response": "Co powie Vector ({slot} zostanie podstawiony). Puste = milczy.",
             "script": "Uruchamiany ze zmiennymi text, slots, esn, device_id.",
             "behavior": "Po odpowiedzi Vector robi to (jak po komendzie głosowej).",
@@ -753,7 +753,7 @@
             "animation": "Grupa animacji"
           },
           "data_description": {
-            "sentences": "Jedno w linii, składnia jak w Assist: [opcjonalne], (to|tamto), {slot} = dowolny tekst, np. „dobranoc [vector]”, „zagraj {utwór}”.",
+            "sentences": "Jedno w linii, składnia jak w Assist: [opcjonalne], (to|tamto), {slot} = dowolny tekst, np. „dobranoc [vector]”, „zagraj {song}”.",
             "response": "Co powie Vector ({slot} zostanie podstawiony). Puste = milczy.",
             "script": "Uruchamiany ze zmiennymi text, slots, esn, device_id.",
             "behavior": "Po odpowiedzi Vector robi to (jak po komendzie głosowej).",

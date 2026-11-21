@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 - 2026-11-21
+
+- Polish translation of the custom voice command form used `{utwór}` instead of `{song}`; Home
+  Assistant logged "Validation of translation placeholders … failed" on every start. A new test
+  checks that every translation uses exactly the placeholders of `strings.json`.
+
 ## 0.2.0 - 2026-11-21
 
 - **Live camera.** With the Vector add-on 0.2.0+ the camera entity has a real stream (WebRTC through
