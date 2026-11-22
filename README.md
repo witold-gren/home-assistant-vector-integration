@@ -110,7 +110,7 @@ examples assume a robot named "Vector".
 | Switch | Manual control, Voice → Home Assistant, wire-pod LLM → Home Assistant, 24-hour clock, metric units, Fahrenheit |
 | Text | Time zone, weather location |
 | Camera | Live stream on demand (WebRTC with sound, add-on 0.2.0+; MJPEG with older add-ons), cached snapshot |
-| Image | Last photo |
+| Image | Last photo, last frame of the live view (kept in Home Assistant, always available — the card's full-screen background) |
 | Media player | Vector's speaker (`tts.speak`, media files, audio URLs) |
 | Event | Wake word, interaction, face, photo, speech |
 

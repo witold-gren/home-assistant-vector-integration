@@ -155,13 +155,29 @@ def test_fullscreen_layout_pad_left_lift_and_listen_right(page) -> None:
     assert bottom["y"] + bottom["height"] <= 402
     # nothing overlaps: pad and the bottom pill are apart
     assert pad["x"] + pad["width"] < bottom["x"] or pad["y"] + pad["height"] < bottom["y"]
-    assert page.locator('.fs-rail button[data-lift="1"]').is_visible()
+    assert page.locator('.fs-pills button[data-lift="1"]').is_visible()
     assert page.locator(".fs-rail #fs-talk").is_visible()
+
+
+def test_fullscreen_head_and_lift_side_by_side_at_mid_height(page) -> None:
+    """One right thumb reaches both: the head and lift pills sit next to each other, centred
+    vertically (asked for the iPad; the same layout fits the phone)."""
+    _open_fullscreen(page)
+    head = page.locator('.fs-pills button[data-head="1"]').bounding_box()
+    lift = page.locator('.fs-pills button[data-lift="1"]').bounding_box()
+    pills = page.locator(".fs-pills").bounding_box()
+    talk = page.locator("#fs-talk").bounding_box()
+    assert abs(head["y"] - lift["y"]) < 2  # same row
+    assert head["x"] + head["width"] < lift["x"]  # head left of lift
+    middle = pills["y"] + pills["height"] / 2
+    assert abs(middle - 402 / 2) < 12
+    assert talk["y"] + talk["height"] < pills["y"]  # the mic stays above them
+    assert pills["x"] + pills["width"] <= 874
 
 
 def test_fullscreen_lift_hold_and_closing_mid_drive_stops(page) -> None:
     _open_fullscreen(page)
-    _press(page, '.fs-rail button[data-lift="1"]')
+    _press(page, '.fs-pills button[data-lift="1"]')
     page.wait_for_timeout(400)
     assert _moves(page)[-1]["lift"] == 1.5
     page.mouse.up()
@@ -309,3 +325,33 @@ def test_fullscreen_talk_button_and_release_before_permission(page) -> None:
     assert page.evaluate("window.recorders") == 0
     assert page.evaluate("window.stoppedTracks") == 1
     assert page.evaluate("window.fetches.length") == 0
+
+
+def test_fullscreen_background_is_the_last_frame_even_when_off(open_card) -> None:
+    """The "Last frame" image kept in HA is the background — also while Vector is off."""
+    page = open_card("offline=1")
+    _open_fullscreen(page)
+    bg = page.evaluate(
+        "document.querySelector('.vector-fs-host').shadowRoot.getElementById('fs-still')"
+        ".style.backgroundImage"
+    )
+    assert "/last-frame.jpg" in bg
+
+
+def test_live_frame_is_sent_to_home_assistant(page) -> None:
+    _open_fullscreen(page)
+    page.evaluate(
+        """() => {
+          const v = document.createElement('video');
+          Object.defineProperty(v, 'videoWidth', {value: 320});
+          Object.defineProperty(v, 'videoHeight', {value: 240});
+          const host = document.createElement('div');
+          host.appendChild(v);
+          card._rememberFrame(host);
+        }"""
+    )
+    page.wait_for_function(
+        "window.fetches.some(f => f.url === '/api/vector/last_frame/camera.vector'"
+        " && f.type === 'image/jpeg')",
+        timeout=3000,
+    )

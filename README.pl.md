@@ -113,7 +113,7 @@ nazwie „Vector”.
 | Przełącznik | Ręczne sterowanie, Głos → Home Assistant, LLM wire-pod → Home Assistant, zegar 24 h, jednostki metryczne, stopnie Fahrenheita |
 | Tekst | Strefa czasowa, lokalizacja pogody |
 | Kamera | Podgląd na żywo na żądanie (WebRTC z dźwiękiem, dodatek 0.2.0+; MJPEG ze starszym dodatkiem), zapamiętany zrzut |
-| Obraz | Ostatnie zdjęcie |
+| Obraz | Ostatnie zdjęcie, ostatnia klatka podglądu na żywo (trzymana w Home Assistant, zawsze dostępna — tło pełnego ekranu karty) |
 | Odtwarzacz multimediów | Głośnik Vectora (`tts.speak`, pliki multimedialne, adresy URL audio) |
 | Zdarzenie | Hey Vector (słowo wybudzające), kontakt, twarz, zdjęcie, wypowiedź |
 

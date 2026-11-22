@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -16,8 +16,9 @@ from homeassistant.helpers.typing import ConfigType
 from .api import VectorAuthError, VectorClient, VectorError
 from .const import BRIDGE_EVENTS, DOMAIN
 from .frontend import async_register_card
+from .last_frame import LastFrameStore, frame_path
 from .services import async_setup_services
-from .views import VectorIntercomView, VectorPhotoView
+from .views import VectorIntercomView, VectorLastFrameView, VectorPhotoView
 from .voice import VoiceRouter
 
 PLATFORMS: list[Platform] = [
@@ -44,6 +45,8 @@ class VectorData:
 
     client: VectorClient
     voice: VoiceRouter
+    # robot serial -> last live-view frame kept on disk (full-screen background while it is off)
+    frames: dict[str, LastFrameStore] = field(default_factory=dict)
 
 
 type VectorConfigEntry = ConfigEntry[VectorData]
@@ -54,6 +57,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async_setup_services(hass)
     hass.http.register_view(VectorPhotoView(hass))
     hass.http.register_view(VectorIntercomView(hass))
+    hass.http.register_view(VectorLastFrameView(hass))
     await async_register_card(hass)
     return True
 
@@ -74,6 +78,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: VectorConfigEntry) -> bo
         raise ConfigEntryNotReady(str(err)) from err
     voice = VoiceRouter(hass, entry, client)
     entry.runtime_data = VectorData(client, voice)
+    for esn in client.robots:
+        store = LastFrameStore(frame_path(hass, DOMAIN, esn))
+        await store.async_load(hass)
+        entry.runtime_data.frames[esn] = store
     entry.async_on_unload(client.close)
     entry.async_on_unload(client.add_event_listener(voice.on_event))
     # option changes (Assist agent, answers) apply at once: VoiceRouter reads entry.options

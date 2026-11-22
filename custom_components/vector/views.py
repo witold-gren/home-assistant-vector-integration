@@ -14,13 +14,30 @@ from homeassistant.helpers import entity_registry as er
 
 from .api import VectorClient, VectorError
 from .const import DOMAIN
+from .last_frame import MAX_FRAME, LastFrameStore
 
 PHOTO_URL = "/api/vector/photo/{esn}/{photo_id}"
 INTERCOM_URL = "/api/vector/intercom/{camera}"
+LAST_FRAME_URL = "/api/vector/last_frame/{camera}"
 # A held "talk" button: a few seconds of webm/mp4 audio from the browser; the add-on decodes any
 # format with ffmpeg. Bigger bodies are refused before they are read.
 MAX_RECORDING = 5 * 1024 * 1024
 MIN_RECORDING = 800  # shorter is an accidental tap
+
+
+def esn_for_camera(hass: HomeAssistant, camera: str) -> str | None:
+    """Robot serial of a Vector camera entity (the card knows its camera, not the serial)."""
+    entry = er.async_get(hass).async_get(camera)
+    if entry is None or entry.platform != DOMAIN or not entry.unique_id.endswith("_camera"):
+        return None
+    return entry.unique_id.removesuffix("_camera")
+
+
+def frame_store_for(hass: HomeAssistant, esn: str) -> LastFrameStore | None:
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.state is ConfigEntryState.LOADED and esn in entry.runtime_data.frames:
+            return entry.runtime_data.frames[esn]
+    return None
 
 
 def client_for(hass: HomeAssistant, esn: str) -> VectorClient | None:
@@ -67,14 +84,7 @@ class VectorIntercomView(HomeAssistantView):
         self.hass = hass
 
     async def post(self, request: web.Request, camera: str) -> web.Response:
-        entry = er.async_get(self.hass).async_get(camera)
-        esn = (
-            entry.unique_id.removesuffix("_camera")
-            if entry is not None
-            and entry.platform == DOMAIN
-            and entry.unique_id.endswith("_camera")
-            else None
-        )
+        esn = esn_for_camera(self.hass, camera)
         client = client_for(self.hass, esn) if esn else None
         if client is None or esn is None:
             return self.json_message("unknown robot", HTTPStatus.NOT_FOUND)
@@ -90,4 +100,32 @@ class VectorIntercomView(HomeAssistantView):
             await client.play_audio(esn, data, interrupt=True)
         except VectorError as err:
             return self.json_message(str(err), HTTPStatus.SERVICE_UNAVAILABLE)
+        return self.json_message("ok")
+
+
+class VectorLastFrameView(HomeAssistantView):
+    """The control card uploads the live view's current frame (JPEG) every few seconds and when
+    the view closes; it is kept on disk as the robot's "Last frame" image."""
+
+    url = LAST_FRAME_URL
+    name = "api:vector:last_frame"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+
+    async def post(self, request: web.Request, camera: str) -> web.Response:
+        esn = esn_for_camera(self.hass, camera)
+        store = frame_store_for(self.hass, esn) if esn else None
+        if store is None:
+            return self.json_message("unknown robot", HTTPStatus.NOT_FOUND)
+        if request.content_length is not None and request.content_length > MAX_FRAME:
+            return self.json_message("frame too big", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+        data = await request.content.read(MAX_FRAME + 1)
+        if len(data) > MAX_FRAME:
+            return self.json_message("frame too big", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+        try:
+            await store.async_save(self.hass, bytes(data))
+        except ValueError as err:
+            return self.json_message(str(err), HTTPStatus.BAD_REQUEST)
         return self.json_message("ok")

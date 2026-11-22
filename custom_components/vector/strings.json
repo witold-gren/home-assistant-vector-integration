@@ -304,6 +304,9 @@
     "image": {
       "last_photo": {
         "name": "Last photo"
+      },
+      "last_frame": {
+        "name": "Last frame"
       }
     },
     "media_player": {

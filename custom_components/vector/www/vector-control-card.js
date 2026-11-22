@@ -35,6 +35,8 @@
   const FEATURE_STREAM = 2; // CameraEntityFeature.STREAM
   const HOLD_IDLE_MS = 60 * 1000; // give control back this long after the last drive (tile)
   const LIVE_LOAD_MAX_MS = 60 * 1000; // loader until the first frame; then give up
+  const LAST_FRAME_WIDTH = 960; // last live frame sent to HA, scaled down (~50-150 kB)
+  const LAST_FRAME_EVERY_MS = 10000; // while watching, so an abrupt end still leaves a recent frame
   const DRIVE_OFF_EVERY_MS = 8000; // "forward" on the charger asks to drive off at most this often
 
   const SPEEDS = { slow: 0.5, normal: 1, fast: 1.6 };
@@ -314,7 +316,7 @@
     .fs-off .h { font-size:.8rem; color:#c5ced8; }
     .fs.offline .fs-off { display:flex; }
     .fs.offline .fs-play { display:none; }
-    .fs.offline .fs-pad, .fs.offline .fs-rail, .fs.offline .fs-bottom { opacity:.35; pointer-events:none; }
+    .fs.offline .fs-pad, .fs.offline .fs-rail, .fs.offline .fs-pills, .fs.offline .fs-bottom { opacity:.35; pointer-events:none; }
 
     /* left: driving pad (forward, back, turn, stop) right next to the island */
     .fs-pad { position:absolute; z-index:4; left:var(--edgeL); top:50%; transform:translateY(-46%);
@@ -330,12 +332,15 @@
 
     /* right: listening (microphone), head and lift on one axis */
     .fs-rail { position:absolute; z-index:4; right:var(--edgeR); top:calc(var(--edgeT) + 6px);
-      bottom:var(--edgeB); width:60px; display:flex; flex-direction:column; align-items:center;
+      width:60px; display:flex; flex-direction:column; align-items:center;
       justify-content:space-between; gap:8px; }
     .fs-ic { width:46px; height:46px; border-radius:50%; background:rgba(0,0,0,.36); }
     .fs-ic ha-icon { --mdc-icon-size:24px; }
     .fs-talk { width:52px; height:52px; touch-action:none; transition:background .1s, transform .1s; }
     .fs-talk.recording { background:#e5483d; transform:scale(.94); box-shadow:0 0 18px rgba(229,72,61,.7); }
+    /* head + lift side by side, vertically centred: one thumb reaches both (iPad, phone) */
+    .fs-pills { position:absolute; z-index:4; right:var(--edgeR); top:50%; transform:translateY(-50%);
+      display:flex; flex-direction:row; align-items:center; gap:14px; }
     .fs-group { display:flex; flex-direction:column; align-items:center; gap:4px; }
     .fs-lbl { font-size:.68rem; color:#e3e8eb; text-shadow:0 1px 3px #000; }
     .fs-pill { width:56px; display:flex; flex-direction:column; overflow:hidden; border-radius:999px;
@@ -944,6 +949,9 @@
           `</div>` +
           `<div class="fs-rail">` +
           `<button class="fs-ic fs-talk" id="fs-talk" title="${t("talk_hold")}">${icon("mdi:microphone")}</button>` +
+          `</div>` +
+          // head and lift side by side at mid-height: both under the right thumb
+          `<div class="fs-pills">` +
           `<div class="fs-group"><span class="fs-lbl">${t("head")}</span><div class="fs-pill">` +
           `<button class="hold" data-head="1">${icon("mdi:arrow-up-bold")}</button>` +
           `<button class="hold" data-head="-1">${icon("mdi:arrow-down-bold")}</button></div></div>` +
@@ -1048,7 +1056,9 @@
         } catch (_) {
           /* ignore */
         }
+        clearInterval(this._frameTimer);
         if (this._fsLive) {
+          this._rememberFrame(this._fsLive);
           this._fsLive.remove();
           this._fsLive = null;
         }
@@ -1106,10 +1116,48 @@
         const el = this._fs("fs-still");
         const cam = this._camState();
         if (!el) return;
+        // The last frame of the last live view, kept in HA ("Last frame" image, always available):
+        // the same picture on every device, also while Vector is off. Else the camera snapshot.
+        const frame = this._sibling("image", "last_frame");
+        const pic = frame && frame.state !== "unavailable" && frame.attributes.entity_picture;
+        if (pic) {
+          el.style.backgroundImage = `url("${pic}")`;
+          return;
+        }
         const token = cam && !this._offline() ? cam.attributes.access_token : "";
         el.style.backgroundImage = token
           ? `url("/api/camera_proxy/${this._config.camera}?token=${token}&t=${Date.now()}")`
           : "none";
+      }
+
+      // Send the live view's current frame to HA (the "Last frame" image = full-screen background).
+      _rememberFrame(live) {
+        if (!live || !this._hass || !this._hass.fetchWithAuth || !this._config.camera) return;
+        const src =
+          live.tagName === "IMG" ? (live.naturalWidth ? live : null)
+            : this._findVideos(live).find((v) => v.videoWidth > 0);
+        if (!src) return;
+        try {
+          const sw = src.videoWidth || src.naturalWidth;
+          const sh = src.videoHeight || src.naturalHeight;
+          const w = Math.min(LAST_FRAME_WIDTH, sw);
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = Math.round((sh / sw) * w);
+          canvas.getContext("2d").drawImage(src, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => {
+            if (!blob) return;
+            this._hass
+              .fetchWithAuth(`/api/vector/last_frame/${this._config.camera}`, {
+                method: "POST",
+                headers: { "Content-Type": "image/jpeg" },
+                body: blob,
+              })
+              .catch(() => {});
+          }, "image/jpeg", 0.72);
+        } catch (_) {
+          /* tainted canvas / no canvas: skip */
+        }
       }
 
       _showPlay(on) {
@@ -1141,14 +1189,18 @@
           this._fsStopLive();
           this._fsToast(this._t("live_failed"));
         });
+        clearInterval(this._frameTimer);
+        this._frameTimer = setInterval(() => this._rememberFrame(this._fsLive), LAST_FRAME_EVERY_MS);
         this._startLiveGuard();
       }
 
       _fsStopLive() {
         clearInterval(this._fsLoadTimer);
+        clearInterval(this._frameTimer);
         const load = this._fs("fs-load");
         if (load) load.classList.remove("show");
         if (this._fsLive) {
+          this._rememberFrame(this._fsLive); // the last frame = background next time
           this._fsLive.remove(); // HA closes the stream → go2rtc stops → the camera stops
           this._fsLive = null;
         }

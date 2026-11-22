@@ -62,10 +62,12 @@
       "button.vector_drive_off_charger": reg("button.vector_drive_off_charger", "drive_off_charger"),
       "button.vector_go_to_charger": reg("button.vector_go_to_charger", "drive_on_charger"),
       "button.vector_refresh_camera_image": reg("button.vector_refresh_camera_image", "refresh_camera"),
+      "image.vector_last_frame": reg("image.vector_last_frame", "last_frame"),
     },
     states: offline
       ? {
           "camera.vector": unavailable("camera.vector", { supported_features: stream ? 2 : 0 }),
+          "image.vector_last_frame": st("image.vector_last_frame", "x", { entity_picture: "/last-frame.jpg?token=t" }),
           "sensor.vector_battery": unavailable("sensor.vector_battery", { device_class: "battery" }),
           "sensor.vector_activity": unavailable("sensor.vector_activity"),
           "binary_sensor.vector_on_charger": unavailable("binary_sensor.vector_on_charger"),
@@ -73,6 +75,7 @@
         }
       : {
           "camera.vector": st("camera.vector", "idle", { access_token: "tok1", supported_features: stream ? 2 : 0 }),
+          "image.vector_last_frame": st("image.vector_last_frame", "x", { entity_picture: "/last-frame.jpg?token=t" }),
           "sensor.vector_battery": st("sensor.vector_battery", "87", { device_class: "battery" }),
           "sensor.vector_activity": st("sensor.vector_activity", "Exploring"),
           "binary_sensor.vector_on_charger": st("binary_sensor.vector_on_charger", "off"),

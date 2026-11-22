@@ -304,6 +304,9 @@
     "image": {
       "last_photo": {
         "name": "Ostatnie zdjęcie"
+      },
+      "last_frame": {
+        "name": "Ostatnia klatka"
       }
     },
     "media_player": {

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.4 - 2026-11-22
+
+- **Full screen (iPad and phone): head and lift side by side at mid-height** — one right thumb
+  reaches both; the microphone stays in the top-right corner.
+- **Last frame kept in Home Assistant:** while the full-screen live view runs, the card sends the
+  current frame (960 px JPEG) every 10 s and when the view closes
+  (`POST /api/vector/last_frame/<camera>`); it is stored on disk per robot and shown by the new,
+  always-available **Last frame** image. It is the full-screen background — the same on every
+  device, after a restart, and while Vector is off.
+
 ## 0.2.3 - 2026-11-21
 
 - **Talk through Vector:** hold 🎙 (in the full-screen view and on the tile) and speak; the
