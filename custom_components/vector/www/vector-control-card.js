@@ -300,7 +300,8 @@
       border:2px solid rgba(255,255,255,.9); box-shadow:0 0 28px rgba(28,230,160,.4); transition:transform .1s; }
     .fs-play-ic ha-icon { --mdc-icon-size:42px; }
     .fs-play:active .fs-play-ic { transform:scale(.95); }
-    .fs-play-lbl { font-size:.85rem; text-shadow:0 1px 4px #000; }
+    .fs-play-lbl { font-size:.95rem; font-weight:600; text-shadow:0 1px 4px #000; }
+    .fs-play-hint { margin-top:-4px; font-size:.8rem; color:#e3e8eb; text-shadow:0 1px 4px #000; }
 
     .fs-load { position:absolute; z-index:5; top:50%; left:50%; transform:translate(-50%,-50%); display:none;
       flex-direction:column; align-items:center; gap:12px; font-size:.85rem; color:#e3e8eb;
@@ -936,7 +937,8 @@
           `<span class="fs-clock" id="fs-clock"></span><span class="fs-batt" id="fs-batt"></span>` +
           `</div>` +
           `<button class="fs-play" id="fs-play" title="${t("live")}">` +
-          `<span class="fs-play-ic">${icon("mdi:play")}</span><span class="fs-play-lbl">${t("start_live")}</span></button>` +
+          `<span class="fs-play-ic">${icon("mdi:play")}</span><span class="fs-play-lbl">${t("no_preview")}</span>` +
+          `<span class="fs-play-hint">${t("no_preview_hint")}</span></button>` +
           `<div class="fs-load" id="fs-load"><span class="spin"></span><span>${t("loading")}</span></div>` +
           `<div class="fs-off">${icon("mdi:robot-off-outline")}<div>${t("unavailable")}</div>` +
           `<div class="h">${t("unavailable_hint")}</div></div>` +
@@ -1077,6 +1079,13 @@
         if (offline && this._fsLive) this._fsStopLive();
         if (offline) this._showPlay(false);
         else if (!this._fsLive && !this._fsStarting) this._showPlay(true);
+        // Background follows the robot: gone when it goes offline, back (or a new last frame)
+        // when it returns — without reopening the full screen.
+        if (!this._fsLive) {
+          const frame = this._sibling("image", "last_frame");
+          const key = offline ? "" : (frame && frame.attributes.entity_picture) || "cam";
+          if (key !== this._fsStillKey) this._showFsStill();
+        }
         const bat = this._sibling("sensor", "battery");
         const b = this._fs("fs-batt");
         if (b) {
@@ -1118,12 +1127,21 @@
         if (!el) return;
         // The last frame of the last live view, kept in HA ("Last frame" image, always available):
         // the same picture on every device, also while Vector is off. Else the camera snapshot.
+        // Off: no picture, only the "unavailable" message (like the small card).
+        if (this._offline()) {
+          el.style.backgroundImage = "none";
+          this._fsStillKey = "";
+          return;
+        }
         const frame = this._sibling("image", "last_frame");
-        const pic = frame && frame.state !== "unavailable" && frame.attributes.entity_picture;
+        const stored = frame && !["unknown", "unavailable"].includes(frame.state); // ever uploaded
+        const pic = stored && frame.attributes.entity_picture;
         if (pic) {
+          this._fsStillKey = pic;
           el.style.backgroundImage = `url("${pic}")`;
           return;
         }
+        this._fsStillKey = "cam";
         const token = cam && !this._offline() ? cam.attributes.access_token : "";
         el.style.backgroundImage = token
           ? `url("/api/camera_proxy/${this._config.camera}?token=${token}&t=${Date.now()}")`

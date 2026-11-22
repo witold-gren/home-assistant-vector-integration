@@ -327,15 +327,29 @@ def test_fullscreen_talk_button_and_release_before_permission(page) -> None:
     assert page.evaluate("window.fetches.length") == 0
 
 
-def test_fullscreen_background_is_the_last_frame_even_when_off(open_card) -> None:
-    """The "Last frame" image kept in HA is the background — also while Vector is off."""
-    page = open_card("offline=1")
-    _open_fullscreen(page)
-    bg = page.evaluate(
+def _fs_bg(page) -> str:
+    return page.evaluate(
         "document.querySelector('.vector-fs-host').shadowRoot.getElementById('fs-still')"
         ".style.backgroundImage"
     )
-    assert "/last-frame.jpg" in bg
+
+
+def test_fullscreen_background_is_the_last_frame_when_available(page) -> None:
+    """Available: the "Last frame" image kept in HA is the background, and the play button says
+    the same as the small card (user, 2026-11-22)."""
+    _open_fullscreen(page)
+    assert "/last-frame.jpg" in _fs_bg(page)
+    text = " ".join(page.locator("#fs-play").inner_text().split())
+    assert "Podgląd z kamery jest wyłączony" in text
+    assert "Dotknij ▶, aby oglądać na żywo" in text
+
+
+def test_fullscreen_offline_has_no_background_only_the_message(open_card) -> None:
+    page = open_card("offline=1")
+    _open_fullscreen(page)
+    assert _fs_bg(page) in ("none", "")
+    assert page.locator(".fs-off").is_visible()
+    assert page.locator("#fs-play").is_hidden()
 
 
 def test_live_frame_is_sent_to_home_assistant(page) -> None:

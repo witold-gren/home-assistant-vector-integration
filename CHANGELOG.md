@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.5 - 2026-11-22
+
+- **Full screen like the small card:** the play button says "Camera preview is off · Tap ▶ to
+  watch live" (was "Start live view"); the background is the stored last frame (fallback: the
+  camera snapshot) and follows the robot — no picture while Vector is unavailable, back as soon
+  as it returns. Before, a last-frame image that was never stored left the background blank.
+
 ## 0.2.4 - 2026-11-22
 
 - **Full screen (iPad and phone): head and lift side by side at mid-height** — one right thumb
