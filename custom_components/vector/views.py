@@ -25,6 +25,23 @@ MAX_RECORDING = 5 * 1024 * 1024
 MIN_RECORDING = 800  # shorter is an accidental tap
 
 
+async def read_limited(stream, limit: int) -> bytes:
+    """The whole body of an aiohttp stream, at most ``limit + 1`` bytes (more = too big).
+
+    ``stream.read(n)`` returns only what has arrived so far, not the whole body: a phone
+    uploading slowly left HA with a cut JPEG (grey lower half) and cut recordings.
+    """
+    chunks: list[bytes] = []
+    size = 0
+    while size <= limit:
+        chunk = await stream.read(limit + 1 - size)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        size += len(chunk)
+    return b"".join(chunks)
+
+
 def esn_for_camera(hass: HomeAssistant, camera: str) -> str | None:
     """Robot serial of a Vector camera entity (the card knows its camera, not the serial)."""
     entry = er.async_get(hass).async_get(camera)
@@ -90,7 +107,7 @@ class VectorIntercomView(HomeAssistantView):
             return self.json_message("unknown robot", HTTPStatus.NOT_FOUND)
         if request.content_length is not None and request.content_length > MAX_RECORDING:
             return self.json_message("recording too long", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
-        data = await request.content.read(MAX_RECORDING + 1)
+        data = await read_limited(request.content, MAX_RECORDING)
         if len(data) > MAX_RECORDING:
             return self.json_message("recording too long", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
         if len(data) < MIN_RECORDING:
@@ -121,7 +138,7 @@ class VectorLastFrameView(HomeAssistantView):
             return self.json_message("unknown robot", HTTPStatus.NOT_FOUND)
         if request.content_length is not None and request.content_length > MAX_FRAME:
             return self.json_message("frame too big", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
-        data = await request.content.read(MAX_FRAME + 1)
+        data = await read_limited(request.content, MAX_FRAME)
         if len(data) > MAX_FRAME:
             return self.json_message("frame too big", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
         try:

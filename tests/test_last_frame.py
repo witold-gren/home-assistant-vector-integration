@@ -12,7 +12,7 @@ from custom_components.vector.last_frame import MAX_FRAME
 from .conftest import FakeBridge
 from .test_init import setup
 
-JPEG = b"\xff\xd8" + b"x" * 800
+JPEG = b"\xff\xd8" + b"x" * 800 + b"\xff\xd9"
 
 
 def _frame_entity(hass: HomeAssistant) -> str:
@@ -65,3 +65,28 @@ async def test_frame_image_stays_available_when_the_bridge_is_gone(
     entry.runtime_data.client._notify()
     await hass.async_block_till_done()
     assert hass.states.get(_frame_entity(hass)).state != "unavailable"
+
+
+async def _pieces(data: bytes, size: int = 1000):
+    """An upload that arrives in pieces (phone on Wi-Fi): request.content.read(n) alone kept
+    only the first piece — a cut JPEG with a grey lower half (2026-11-22)."""
+    import asyncio
+
+    for i in range(0, len(data), size):
+        yield data[i : i + size]
+        await asyncio.sleep(0.01)
+
+
+async def test_slow_upload_is_stored_whole_and_cut_jpeg_refused(
+    hass: HomeAssistant, bridge: FakeBridge, entry: MockConfigEntry, hass_client
+) -> None:
+    assert await async_setup_component(hass, "http", {})
+    await setup(hass, entry)
+    client = await hass_client()
+    url = "/api/vector/last_frame/camera.vector"
+    frame = b"\xff\xd8" + bytes(range(256)) * 60 + b"\xff\xd9"
+    assert (await client.post(url, data=_pieces(frame))).status == 200
+    esn = next(iter(entry.runtime_data.frames))
+    assert entry.runtime_data.frames[esn].jpeg == frame
+    assert (await client.post(url, data=frame[:-40])).status == 400
+    assert entry.runtime_data.frames[esn].jpeg == frame

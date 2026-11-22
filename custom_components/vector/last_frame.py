@@ -15,6 +15,12 @@ from homeassistant.core import HomeAssistant
 
 MAX_FRAME = 1024 * 1024  # a 960 px JPEG is ~50-150 kB; refuse anything bigger than 1 MB
 JPEG_MAGIC = b"\xff\xd8"
+JPEG_END = b"\xff\xd9"
+
+
+def is_complete_jpeg(data: bytes) -> bool:
+    """Starts with SOI and ends with EOI: a cut upload shows a grey lower part in the browser."""
+    return data[:2] == JPEG_MAGIC and data.rstrip(b"\x00")[-2:] == JPEG_END
 
 
 class LastFrameStore:
@@ -39,13 +45,15 @@ class LastFrameStore:
                 return None
 
         found = await hass.async_add_executor_job(_read)
-        if found and found[0][:2] == JPEG_MAGIC:
+        if found and is_complete_jpeg(found[0]):  # a cut frame from older versions is skipped
             self.jpeg = found[0]
             self.updated_at = datetime.fromtimestamp(found[1], UTC)
 
     async def async_save(self, hass: HomeAssistant, jpeg: bytes) -> None:
         if jpeg[:2] != JPEG_MAGIC:
             raise ValueError("not a JPEG")
+        if not is_complete_jpeg(jpeg):
+            raise ValueError("incomplete JPEG")
         if len(jpeg) > MAX_FRAME:
             raise ValueError("frame too big")
 

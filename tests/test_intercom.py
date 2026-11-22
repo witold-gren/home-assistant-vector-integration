@@ -60,3 +60,19 @@ async def test_intercom_needs_auth(
     client = await hass_client_no_auth()
     resp = await client.post("/api/vector/intercom/camera.vector", data=b"x" * 4000)
     assert resp.status == 401
+
+
+async def test_slow_recording_plays_whole(
+    hass: HomeAssistant, bridge: FakeBridge, entry: MockConfigEntry, hass_client
+) -> None:
+    import asyncio
+
+    async def pieces():
+        for _ in range(40):
+            yield b"x" * 1000
+            await asyncio.sleep(0.005)
+
+    client = await _client(hass, entry, hass_client)
+    resp = await client.post("/api/vector/intercom/camera.vector", data=pieces())
+    assert resp.status == 200
+    assert len(bridge.audio[-1][0]) == 40000

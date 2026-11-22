@@ -279,6 +279,10 @@ example, a Polish install gets Polish entity IDs). Check yours under **Settings 
 
 ## Limitations
 
+- **Half-grey full-screen background (last frame)** before 0.2.6: Home Assistant saved only the part
+  of the card's upload that had arrived so far (a phone uploading slowly left a cut JPEG; intercom
+  messages could be cut too). Update to 0.2.6 and restart Home Assistant; the next live view stores
+  a whole frame.
 - **Face screen images** are not supported: on Vector 2.0 writing images to the face screen crashes
   the robot.
 - **Camera** gives about 2 new pictures per second (a limit of Vector's SDK camera feed). The live

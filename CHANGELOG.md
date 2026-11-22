@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.6 - 2026-11-22
+
+- **Fix: half-grey background (last frame), cut intercom messages and cut audio.** Home Assistant
+  read only the part of an upload that had arrived so far (`content.read(n)`), so a phone
+  uploading slowly left a cut JPEG (grey lower part) or a cut recording; the media player could
+  cut downloaded audio the same way. The whole body is read now; a JPEG without its end marker is
+  refused, and a cut frame saved by an older version is not used.
+
 ## 0.2.5 - 2026-11-22
 
 - **Full screen like the small card:** the play button says "Camera preview is off · Tap ▶ to

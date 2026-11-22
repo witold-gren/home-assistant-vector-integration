@@ -287,6 +287,10 @@ polska instalacja dostaje polskie identyfikatory encji). Sprawdź swoje w
 
 ## Ograniczenia
 
+- **Tło pełnego ekranu (ostatnia klatka) do połowy szare** przed 0.2.6: Home Assistant zapisywał
+  tylko tę część przesyłanej klatki, która zdążyła dojść (przy wolnym przesyłaniu z telefonu
+  zostawał ucięty JPEG; wiadomości intercomu też mogły być ucinane). Zaktualizuj do 0.2.6
+  i zrestartuj Home Assistant; następny podgląd zapisze pełną klatkę.
 - **Obrazy na ekranie twarzy** nie są obsługiwane: na Vectorze 2.0 wysłanie obrazu na ekran twarzy
   zawiesza robota.
 - **Kamera** daje około 2 nowych obrazów na sekundę (ograniczenie strumienia kamery w SDK Vectora).

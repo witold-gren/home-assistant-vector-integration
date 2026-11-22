@@ -25,6 +25,7 @@ from homeassistant.util import dt as dt_util
 from . import VectorConfigEntry
 from .api import VectorClient, VectorError
 from .entity import VectorEntity
+from .views import read_limited
 
 # The bridge takes a whole file (decoded by ffmpeg): endless streams are not supported.
 MAX_AUDIO_BYTES = 50 * 1024 * 1024
@@ -124,7 +125,7 @@ class VectorSpeaker(VectorEntity, MediaPlayerEntity):
         try:
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=60)) as resp:
                 resp.raise_for_status()
-                data = await resp.content.read(MAX_AUDIO_BYTES + 1)
+                data = await read_limited(resp.content, MAX_AUDIO_BYTES)
         except (aiohttp.ClientError, TimeoutError) as err:
             raise HomeAssistantError(f"Cannot fetch {media_id}: {err}") from err
         if len(data) > MAX_AUDIO_BYTES:
