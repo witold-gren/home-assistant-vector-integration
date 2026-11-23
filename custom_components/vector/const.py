@@ -77,6 +77,8 @@ BRIDGE_EVENTS: Final = (
     "photo_taken",
     "audio_started",
     "audio_finished",
+    "program_started",
+    "program_ended",
 )
 # (vector_speech is fired by voice.py, with the text, the decision and the Assist answer)
 

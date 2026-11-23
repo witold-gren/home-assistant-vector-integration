@@ -50,6 +50,7 @@ let him control your home: "Hey Vector, turn on the living room light" goes to A
 - [Custom voice commands](#custom-voice-commands)
 - [Events](#events)
 - [Dashboard examples](#dashboard-examples)
+- [Child's program (Robots Code Studio)](#childs-program-robots-code-studio)
 - [Limitations](#limitations)
 
 ## Requirements
@@ -101,7 +102,7 @@ examples assume a robot named "Vector".
 
 | Platform | Entities |
 | --- | --- |
-| Binary sensor | Connection, charging, on charger, picked up, touched, cliff, sleeping, listening, cube |
+| Binary sensor | Connection, charging, on charger, picked up, touched, cliff, sleeping, listening, cube, program (a child's program runs; add-on 0.3.0+) |
 | Sensor | Battery, battery voltage, battery level, activity, stimulation, last face, known faces, photos, last speech, time alive, petting time, distance driven, wake word reactions, cube battery |
 | Button | Go to charger, drive off charger, stop, dance, explore, go to sleep, come here, look at me, fist bump, do a trick, take a photo, turn to last face, refresh state, refresh camera image, cube actions |
 | Number | Head angle, lift height |
@@ -112,7 +113,7 @@ examples assume a robot named "Vector".
 | Camera | Live stream on demand (WebRTC with sound, add-on 0.2.0+; MJPEG with older add-ons), cached snapshot |
 | Image | Last photo, last frame of the live view (kept in Home Assistant, always available — the card's full-screen background) |
 | Media player | Vector's speaker (`tts.speak`, media files, audio URLs) |
-| Event | Wake word, interaction, face, photo, speech |
+| Event | Wake word, interaction, face, photo, speech, program (started / ended, with the reason) |
 
 Cube entities are disabled by default until the robot knows a cube. Vector's photos are also
 available in the media browser under **Media → Vector**.
@@ -198,6 +199,8 @@ and before Assist.
 | `vector_audio_finished` | Audio finishes playing. |
 | `vector_speech` | A sentence went through the voice router (text, decision, answer). |
 | `vector_command` | A custom voice command matched (command, slots, text). |
+| `vector_program_started` | A child's program started (`owner`, `since`, `limit`, `heartbeat`). |
+| `vector_program_ended` | A child's program ended (`owner`, `reason`, `cause`, `duration`). |
 
 ## Dashboard examples
 
@@ -276,6 +279,48 @@ tap_action:
 
 Entity IDs depend on the Home Assistant language at the time the integration was set up (for
 example, a Polish install gets Polish entity IDs). Check yours under **Settings → Entities**.
+
+## Child's program (Robots Code Studio)
+
+With add-on 0.3.0+, Robots Code Studio (a block / Python editor for children) can run a child's
+program on Vector step by step. While it runs, **Program** (`binary_sensor.vector_program`) is on
+(attributes: who started it, since when, its time limit), the control card greys its controls out
+and says "Child's program running", and the add-on refuses motion, animation and speech from Home
+Assistant. **STOP** on the card (or `vector.stop`) always works and ends the program. The add-on
+also stops the robot when the studio stops answering, at the time limit and when Vector takes
+control back (a table edge, being picked up). Setting it up (studio token, port 3012): see the
+add-on's documentation, section *Robots Code Studio*.
+
+`event.vector_program` and the bus events `vector_program_started` / `vector_program_ended` are for
+automations, e.g. a notification when a program ends with `reason: control_lost`:
+
+```yaml
+triggers:
+  - trigger: event
+    event_type: vector_program_ended
+    event_data:
+      reason: control_lost
+actions:
+  - action: notify.notify
+    data:
+      message: "Vector stopped the program ({{ trigger.event.data.cause }})"
+```
+
+End reasons: `end`, `stop`, `error` (from the program), `watchdog` (the studio stopped answering),
+`limit`, `ha_stop` (STOP in Home Assistant), `control_lost` with `cause` `cliff`, `picked_up`,
+`falling`, `wake_word`, `robot`, `connection`, and `disconnected` with `cause` `client` or `robot`.
+
+### FAQ
+
+**The card does nothing and says "Child's program running".** A child's program drives Vector; only
+the program may move him now. Tap **STOP** to end it — the card works again at once.
+
+**The program stopped by itself ("Vector saw an edge").** Vector's own safety reflexes took control
+back (`reason: control_lost`, `cause: cliff` or `picked_up`). Move him away from the edge or put him
+down, then start the program again.
+
+**Announcements through Vector are silent during a program.** The add-on lets only the program use
+the speaker while it runs; they work again after the program ends.
 
 ## Limitations
 

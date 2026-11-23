@@ -86,6 +86,8 @@ class FakeBridge:
         self.voice_router = {"enabled": True, "hook": "http://192.168.1.10:8790"}
         # live stream announced in hello (add-on 0.2.0+); None = an older add-on
         self.stream: dict[str, Any] | None = None
+        # hello.features (add-on 0.3.0+: ["program"]); None = an older add-on
+        self.features: list[str] | None = None
         app = web.Application()
         app.router.add_get("/ws", self._ws)
         app.router.add_get("/snapshot/{esn}", self._snapshot)
@@ -116,6 +118,8 @@ class FakeBridge:
         }
         if self.stream is not None:
             hello["stream"] = self.stream
+        if self.features is not None:
+            hello["features"] = self.features
         await ws.send_json(hello)
         async for msg in ws:
             if msg.type is not WSMsgType.TEXT:

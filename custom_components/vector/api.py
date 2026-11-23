@@ -55,6 +55,8 @@ class VectorClient:
         self.version: str | None = None
         # live stream announced by the add-on: {"rtsp_port", "path", "username", "audio"}
         self.stream: dict[str, Any] | None = None
+        # what the add-on can do beyond API 1 (hello.features), e.g. "program" (add-on 0.3.0+)
+        self.features: set[str] = set()
         self.connected = False
 
     @property
@@ -105,6 +107,7 @@ class VectorClient:
         self.voice_router = hello.get("voice_router")
         stream = hello.get("stream")
         self.stream = stream if isinstance(stream, dict) else None
+        self.features = {str(f) for f in hello.get("features") or []}
         self.connected = True
         self._notify()
 
@@ -157,6 +160,19 @@ class VectorClient:
             self.voice_router = data.get("data")
             self._notify()
             return
+        if event in ("program_started", "program_ended") and esn in self.robots:
+            # a child's program (Robots Code Studio): show it at once, not only with the next
+            # state push (at most a second later)
+            info = data.get("data") or {}
+            self.robots[esn] = {
+                **self.robots[esn],
+                "program": (
+                    {k: info.get(k) for k in ("owner", "since", "limit")}
+                    if event == "program_started"
+                    else None
+                ),
+            }
+            self._notify()
         for listener in list(self._event_listeners):
             listener(esn, event, data.get("data") or {})
 

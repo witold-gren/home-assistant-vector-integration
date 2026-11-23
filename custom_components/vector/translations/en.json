@@ -45,6 +45,20 @@
       },
       "cube_connected": {
         "name": "Cube"
+      },
+      "program": {
+        "name": "Program",
+        "state_attributes": {
+          "owner": {
+            "name": "Owner"
+          },
+          "since": {
+            "name": "Since"
+          },
+          "limit": {
+            "name": "Time limit"
+          }
+        }
       }
     },
     "sensor": {
@@ -291,6 +305,17 @@
             "state": {
               "handled": "Handled by Home Assistant",
               "passed": "Passed to wire-pod"
+            }
+          }
+        }
+      },
+      "program": {
+        "name": "Program",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "program_started": "Program started",
+              "program_ended": "Program ended"
             }
           }
         }

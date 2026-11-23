@@ -24,10 +24,14 @@
  * (the robot's microphone), head and lift on the right, speed and charger at the bottom. The view
  * lives in its own element in <body>: dashboards with CSS transforms would otherwise trap
  * position:fixed inside the tile.
+ *
+ * Child's program (Robots Code Studio, add-on 0.3.0+): while the "Child's program" binary sensor is
+ * on, the add-on lets only the program move Vector — the card greys its controls out and says so.
+ * STOP stays: it ends the program (the add-on answers every stop, reason "ha_stop").
  */
 (function () {
   "use strict";
-  const CARD_VERSION = "0.2.3";
+  const CARD_VERSION = "0.3.0";
   const REPEAT_MS = 300;
   const HOLD_RENEW_MS = 5 * 60 * 1000; // the add-on holds control for at most 10 min
   const LIVE_IDLE_MS = 5 * 60 * 1000;
@@ -86,6 +90,8 @@
       live_paused: "Live view paused — tap ▶ to continue",
       rotate: "Turn your phone sideways",
       config_error: "Set camera: camera.vector",
+      program_running: "Child's program running",
+      program_hint: "STOP ends it",
       card_name: "Vector — control",
       card_description: "Vector live camera and driving: forward, back, turn, head and lift; full-screen control.",
     },
@@ -133,6 +139,8 @@
       live_paused: "Podgląd wstrzymany — dotknij ▶, aby wznowić",
       rotate: "Obróć telefon poziomo",
       config_error: "Ustaw camera: camera.vector",
+      program_running: "Program dziecka działa",
+      program_hint: "STOP go kończy",
       card_name: "Vector — sterowanie",
       card_description: "Podgląd na żywo z kamery Vectora i jazda: przód, tył, skręt, głowa i ramię; sterowanie na pełnym ekranie.",
     },
@@ -215,6 +223,16 @@
     ha-card.offline .cam .play, ha-card.offline .cam .close { display:none; }
     ha-card.offline .pad, ha-card.offline .speed, ha-card.offline .actions, ha-card.offline .charger {
       opacity:.35; pointer-events:none; }
+
+    /* a child's program drives Vector: everything but STOP is greyed out */
+    .prog { display:none; align-items:center; justify-content:center; gap:8px; margin:10px 16px 0;
+      padding:10px 12px; border-radius:12px; background:rgba(255,171,25,.18); color:var(--primary-text-color);
+      font-size:.9em; text-align:center; flex-wrap:wrap; }
+    .prog ha-icon { --mdc-icon-size:22px; }
+    .prog .ph2 { color:var(--secondary-text-color); }
+    ha-card.program .prog { display:flex; }
+    ha-card.program .pad .col, ha-card.program .dpad button.hold, ha-card.program .speed,
+    ha-card.program .actions, ha-card.program .charger { opacity:.35; pointer-events:none; }
 
     .charger { display:none; align-items:center; justify-content:center; gap:10px; margin:10px 16px 0;
       padding:10px 12px; border-radius:12px; background:rgba(28,230,160,.12); color:var(--primary-text-color);
@@ -316,6 +334,13 @@
     .fs-off ha-icon { --mdc-icon-size:40px; opacity:.8; }
     .fs-off .h { font-size:.8rem; color:#c5ced8; }
     .fs.offline .fs-off { display:flex; }
+    .fs-prog { position:absolute; z-index:6; top:14px; left:50%; transform:translateX(-50%); display:none;
+      align-items:center; gap:8px; padding:8px 14px; border-radius:12px; background:rgba(255,171,25,.85);
+      color:#000; font-size:.85rem; font-weight:600; white-space:nowrap; }
+    .fs-prog ha-icon { --mdc-icon-size:20px; }
+    .fs.program .fs-prog { display:flex; }
+    .fs.program .fs-btn.hold, .fs.program .fs-rail, .fs.program .fs-pills, .fs.program .fs-bottom {
+      opacity:.35; pointer-events:none; }
     .fs.offline .fs-play { display:none; }
     .fs.offline .fs-pad, .fs.offline .fs-rail, .fs.offline .fs-pills, .fs.offline .fs-bottom { opacity:.35; pointer-events:none; }
 
@@ -472,6 +497,24 @@
         return undefined;
       }
 
+      // A child's program (Robots Code Studio) runs: only the program moves Vector.
+      _programRunning() {
+        const p = this._sibling("binary_sensor", "program");
+        return !!p && p.state === "on";
+      }
+
+      // The program started: stop our own driving and forget our hold (the add-on refuses
+      // hold/release from the card now; the program holds control until it ends).
+      _yieldToProgram() {
+        this._stopHold(true);
+        if (this._talkRec || this._talkWanted) this._talkEnd();
+        clearInterval(this._holdRenew);
+        this._holdRenew = undefined;
+        clearTimeout(this._holdIdle);
+        this._weHold = false;
+        this._manualHold = false;
+      }
+
       _onCharger() {
         const ch = this._sibling("binary_sensor", "on_charger");
         return !!ch && ch.state === "on";
@@ -500,7 +543,7 @@
 
       // Take control for steering (full screen opened, first drive in the tile).
       _autoHold() {
-        if (!this._config || this._config.hold === false || this._offline()) return;
+        if (!this._config || this._config.hold === false || this._offline() || this._programRunning()) return;
         if (!this._weHold && !this._holding() && this._sibling("switch", "hold_control")) {
           this._setHold(true);
         }
@@ -540,6 +583,8 @@
           `</div>` +
           `<div class="charger"><span>${t("on_charger")}</span>` +
           `<button data-press="drive_off_charger">${icon("mdi:arrow-up-box")}${t("drive_off")}</button></div>` +
+          `<div class="prog">${icon("mdi:robot-happy-outline")}<span class="pt">${t("program_running")}</span>` +
+          `<span class="ph2">${t("program_hint")}</span></div>` +
           `<div class="status"></div>` +
           `<div class="pad">` +
           `<div class="col"><span class="lbl">${t("head")}</span>` +
@@ -668,6 +713,10 @@
         const offline = this._offline();
         this._card.classList.toggle("offline", offline);
         this._cam.classList.toggle("can-play", !offline);
+        const program = !offline && this._programRunning();
+        this._card.classList.toggle("program", program);
+        if (program && !this._program) this._yieldToProgram();
+        this._program = program;
         if (offline) {
           this._stopLive();
           this._placeholder(this._t("unavailable"), this._t("unavailable_hint"));
@@ -726,7 +775,7 @@
 
       _startHold(btn) {
         this._stopHold(true);
-        if (this._offline()) return;
+        if (this._offline() || this._programRunning()) return;
         // "forward" on the charger = drive off it (Vector leaves the station himself). Once per
         // DRIVE_OFF_EVERY_MS: every tap used to send it again and the robot answered each one with
         // BEHAVIOR_WONT_ACTIVATE_STATE (a stack of error toasts) while it was still busy.
@@ -942,6 +991,7 @@
           `<div class="fs-load" id="fs-load"><span class="spin"></span><span>${t("loading")}</span></div>` +
           `<div class="fs-off">${icon("mdi:robot-off-outline")}<div>${t("unavailable")}</div>` +
           `<div class="h">${t("unavailable_hint")}</div></div>` +
+          `<div class="fs-prog">${icon("mdi:robot-happy-outline")}<span>${t("program_running")} · ${t("program_hint")}</span></div>` +
           `<div class="fs-pad">` +
           `<span></span><button class="fs-btn hold" data-drive="fwd">${icon("mdi:chevron-up")}</button><span></span>` +
           `<button class="fs-btn hold" data-drive="left">${icon("mdi:rotate-left")}</button>` +
@@ -1076,6 +1126,7 @@
         if (!fs) return;
         const offline = this._offline();
         fs.classList.toggle("offline", offline);
+        fs.classList.toggle("program", !offline && this._programRunning());
         if (offline && this._fsLive) this._fsStopLive();
         if (offline) this._showPlay(false);
         else if (!this._fsLive && !this._fsStarting) this._showPlay(true);
@@ -1286,7 +1337,7 @@
       }
 
       async _talkStart(btn) {
-        if (this._talkWanted || this._talkRec || this._offline()) return;
+        if (this._talkWanted || this._talkRec || this._offline() || this._programRunning()) return;
         this._talkBtn = btn;
         if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           this._notify(this._t("talk_https"));

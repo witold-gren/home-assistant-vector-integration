@@ -51,6 +51,7 @@ Assist.
 - [Własne komendy głosowe](#własne-komendy-głosowe)
 - [Zdarzenia](#zdarzenia)
 - [Przykłady dashboardów](#przykłady-dashboardów)
+- [Program dziecka (Robots Code Studio)](#program-dziecka-robots-code-studio)
 - [Ograniczenia](#ograniczenia)
 
 ## Wymagania
@@ -104,7 +105,7 @@ nazwie „Vector”.
 
 | Platforma | Encje |
 | --- | --- |
-| Czujnik binarny | Połączenie, ładowanie, na ładowarce, podniesiony, dotyk, krawędź, śpi, słucha, kostka |
+| Czujnik binarny | Połączenie, ładowanie, na ładowarce, podniesiony, dotyk, krawędź, śpi, słucha, kostka, program dziecka (działa program z Robots Code Studio; dodatek 0.3.0+) |
 | Czujnik | Bateria, napięcie baterii, poziom baterii, aktywność, pobudzenie, ostatnia twarz, znane twarze, zdjęcia, ostatnia wypowiedź, czas życia, czas głaskania, przejechany dystans, reakcje na „Hey Vector”, bateria kostki |
 | Przycisk | Do ładowarki, zjedź z ładowarki, stop, tańcz, eksploruj, idź spać, chodź tu, patrz na mnie, żółwik, zrób sztuczkę, zrób zdjęcie, odwróć się do twarzy, odśwież stan, odśwież obraz kamery, akcje kostki |
 | Liczba | Kąt głowy, wysokość podnośnika |
@@ -115,7 +116,7 @@ nazwie „Vector”.
 | Kamera | Podgląd na żywo na żądanie (WebRTC z dźwiękiem, dodatek 0.2.0+; MJPEG ze starszym dodatkiem), zapamiętany zrzut |
 | Obraz | Ostatnie zdjęcie, ostatnia klatka podglądu na żywo (trzymana w Home Assistant, zawsze dostępna — tło pełnego ekranu karty) |
 | Odtwarzacz multimediów | Głośnik Vectora (`tts.speak`, pliki multimedialne, adresy URL audio) |
-| Zdarzenie | Hey Vector (słowo wybudzające), kontakt, twarz, zdjęcie, wypowiedź |
+| Zdarzenie | Hey Vector (słowo wybudzające), kontakt, twarz, zdjęcie, wypowiedź, program dziecka (start / koniec z powodem) |
 
 Encje kostki są domyślnie wyłączone, dopóki robot nie zna kostki. Zdjęcia Vectora są też dostępne
 w przeglądarce multimediów w **Multimedia → Vector**.
@@ -203,6 +204,8 @@ Każde dopasowanie wysyła też zdarzenie `vector_command`. Komendy są sprawdza
 | `vector_audio_finished` | Odtwarzanie dźwięku się skończyło. |
 | `vector_speech` | Zdanie przeszło przez router głosowy (tekst, decyzja, odpowiedź). |
 | `vector_command` | Dopasowano własną komendę głosową (komenda, sloty, tekst). |
+| `vector_program_started` | Uruchomiono program dziecka (`owner`, `since`, `limit`, `heartbeat`). |
+| `vector_program_ended` | Program dziecka się skończył (`owner`, `reason`, `cause`, `duration`). |
 
 ## Przykłady dashboardów
 
@@ -284,6 +287,48 @@ tap_action:
 Identyfikatory encji zależą od języka Home Assistant w chwili konfiguracji integracji (np.
 polska instalacja dostaje polskie identyfikatory encji). Sprawdź swoje w
 **Ustawienia → Urządzenia i usługi → Encje**.
+
+## Program dziecka (Robots Code Studio)
+
+Od dodatku 0.3.0 Robots Code Studio (edytor klocków / Pythona dla dzieci) może wykonywać program
+dziecka na Vectorze krok po kroku. W tym czasie **Program dziecka** (`binary_sensor.vector_program`)
+jest włączony (atrybuty: kto uruchomił, od kiedy, limit czasu), karta sterowania wyszarza
+sterowanie z napisem „Program dziecka działa”, a dodatek odrzuca ruch, animacje i mowę z Home
+Assistant. **STOP** na karcie (albo `vector.stop`) działa zawsze i kończy program. Dodatek zatrzymuje
+też robota, gdy studio przestaje odpowiadać, po limicie czasu i gdy Vector sam odbierze kontrolę
+(krawędź stołu, podniesienie). Konfiguracja (token studia, port 3012): dokumentacja dodatku, sekcja
+*Robots Code Studio*.
+
+`event.vector_program` i zdarzenia `vector_program_started` / `vector_program_ended` służą do
+automatyzacji, np. powiadomienie, gdy program skończy się z `reason: control_lost`:
+
+```yaml
+triggers:
+  - trigger: event
+    event_type: vector_program_ended
+    event_data:
+      reason: control_lost
+actions:
+  - action: notify.notify
+    data:
+      message: "Vector przerwał program ({{ trigger.event.data.cause }})"
+```
+
+Powody końca: `end`, `stop`, `error` (od programu), `watchdog` (studio przestało odpowiadać),
+`limit`, `ha_stop` (STOP w Home Assistant), `control_lost` z `cause` `cliff`, `picked_up`,
+`falling`, `wake_word`, `robot`, `connection` oraz `disconnected` z `cause` `client` albo `robot`.
+
+### FAQ
+
+**Karta nic nie robi i pokazuje „Program dziecka działa”.** Vectorem steruje program dziecka; tylko
+on może teraz nim ruszać. Dotknij **STOP**, żeby go zakończyć — karta od razu znowu działa.
+
+**Program sam się zatrzymał („Vector zobaczył krawędź”).** Własne odruchy bezpieczeństwa Vectora
+odebrały kontrolę (`reason: control_lost`, `cause: cliff` albo `picked_up`). Odsuń go od krawędzi albo
+postaw na podłodze i uruchom program jeszcze raz.
+
+**Komunikaty przez Vectora milczą w czasie programu.** Dodatek pozwala korzystać z głośnika tylko
+programowi; po końcu programu komunikaty znów działają.
 
 ## Ograniczenia
 

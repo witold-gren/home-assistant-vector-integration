@@ -14,6 +14,7 @@
   const params = new URLSearchParams(location.search);
   const offline = params.get("offline") === "1";
   const stream = params.get("stream") !== "0";
+  const program = params.get("program") === "1"; // a child's program runs (add-on 0.3.0+)
 
   // The card registers itself once <home-assistant> exists (like in the real frontend).
   customElements.define("home-assistant", class extends HTMLElement {});
@@ -63,6 +64,7 @@
       "button.vector_go_to_charger": reg("button.vector_go_to_charger", "drive_on_charger"),
       "button.vector_refresh_camera_image": reg("button.vector_refresh_camera_image", "refresh_camera"),
       "image.vector_last_frame": reg("image.vector_last_frame", "last_frame"),
+      "binary_sensor.vector_program": reg("binary_sensor.vector_program", "program"),
     },
     states: offline
       ? {
@@ -83,6 +85,8 @@
           "button.vector_drive_off_charger": st("button.vector_drive_off_charger", "unknown"),
           "button.vector_go_to_charger": st("button.vector_go_to_charger", "unknown"),
           "button.vector_refresh_camera_image": st("button.vector_refresh_camera_image", "unknown"),
+          "binary_sensor.vector_program": st("binary_sensor.vector_program", program ? "on" : "off",
+            program ? { owner: "rcs", since: "2026-11-23T10:00:00+00:00", limit: 300 } : {}),
         },
     fetchWithAuth(url, opts) {
       window.fetches.push({ url, type: opts && opts.headers && opts.headers["Content-Type"] });

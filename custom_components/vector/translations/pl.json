@@ -45,6 +45,20 @@
       },
       "cube_connected": {
         "name": "Kostka"
+      },
+      "program": {
+        "name": "Program dziecka",
+        "state_attributes": {
+          "owner": {
+            "name": "Kto uruchomił"
+          },
+          "since": {
+            "name": "Od"
+          },
+          "limit": {
+            "name": "Limit czasu"
+          }
+        }
       }
     },
     "sensor": {
@@ -291,6 +305,17 @@
             "state": {
               "handled": "Obsłużona przez Home Assistant",
               "passed": "Oddana wire-pod"
+            }
+          }
+        }
+      },
+      "program": {
+        "name": "Program dziecka",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "program_started": "Program uruchomiony",
+              "program_ended": "Program zakończony"
             }
           }
         }

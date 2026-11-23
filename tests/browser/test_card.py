@@ -369,3 +369,85 @@ def test_live_frame_is_sent_to_home_assistant(page) -> None:
         " && f.type === 'image/jpeg')",
         timeout=3000,
     )
+
+
+# --- child's program (Robots Code Studio, add-on 0.3.0+) ---------------------------------------
+
+
+def _set_program(page, on: bool) -> None:
+    """The add-on reports a program starting / ending: the binary sensor changes."""
+    page.evaluate(
+        """(on) => {
+          const id = 'binary_sensor.vector_program';
+          const sensor = {entity_id: id, state: on ? 'on' : 'off', attributes: {}};
+          const states = Object.assign({}, window.hass.states, {[id]: sensor});
+          window.hass = Object.assign({}, window.hass, {states});
+          window.card.hass = window.hass;
+        }""",
+        on,
+    )
+
+
+def test_program_greys_out_controls_but_stop_ends_it(open_card) -> None:
+    page = open_card("program=1")
+    banner = page.locator("ha-card .prog")
+    assert banner.is_visible() and "Program dziecka działa" in banner.inner_text()
+    # driving, head, Hold and the action buttons do nothing
+    for selector in (
+        '.dpad button[data-drive="fwd"]',
+        'button[data-head="1"]',
+        'button[data-lift="-1"]',
+    ):
+        page.locator(selector).dispatch_event("pointerdown")
+    page.wait_for_timeout(400)
+    assert _moves(page) == []
+    assert page.locator(".speed").evaluate("e => getComputedStyle(e).pointerEvents") == "none"
+    assert page.locator(".actions").evaluate("e => getComputedStyle(e).pointerEvents") == "none"
+    assert _calls(page, "turn_on") == []  # no hold taken
+    # STOP is still live and ends the program
+    stop = page.locator(".dpad button.stop")
+    assert stop.evaluate("e => getComputedStyle(e).pointerEvents") != "none"
+    stop.click()
+    assert [c["data"] for c in _calls(page, "stop")] == [{"device_id": "dev-vector"}]
+
+
+def test_program_starting_stops_our_driving(page) -> None:
+    assert page.locator("ha-card .prog").is_hidden()
+    _press(page, '.dpad button[data-drive="fwd"]')
+    page.wait_for_timeout(400)
+    assert _moves(page), "driving started"
+    _set_program(page, True)
+    # the repeat stops at once (no final empty move: the add-on refuses it during a program and
+    # stopped the card's driving itself when the program began)
+    page.wait_for_timeout(50)
+    count = len(_moves(page))
+    page.wait_for_timeout(700)
+    page.mouse.up()
+    page.wait_for_timeout(100)
+    assert len(_moves(page)) == count
+    assert page.locator("ha-card .prog").is_visible()
+    # the hold the card took is forgotten: no renewals, nothing sent on its behalf
+    before = len(_calls(page, "turn_on"))
+    page.locator('.dpad button[data-drive="fwd"]').dispatch_event("pointerdown")
+    page.wait_for_timeout(400)
+    assert len(_calls(page, "turn_on")) == before
+    _set_program(page, False)
+    assert page.locator("ha-card .prog").is_hidden()
+
+
+def test_program_in_full_screen(open_card) -> None:
+    page = open_card("program=1")
+    _open_fullscreen(page)
+    fs = page.locator("div.vector-fs-host .fs")
+    assert "program" in (fs.get_attribute("class") or "")
+    banner = page.locator("div.vector-fs-host .fs-prog")
+    assert banner.is_visible() and "Program dziecka działa" in banner.inner_text()
+    assert (
+        page.locator("div.vector-fs-host .fs-pills").evaluate(
+            "e => getComputedStyle(e).pointerEvents"
+        )
+        == "none"
+    )
+    assert _calls(page, "turn_on") == []  # opening the view takes no control during a program
+    page.locator("div.vector-fs-host #fs-stop").click()
+    assert len(_calls(page, "stop")) == 1

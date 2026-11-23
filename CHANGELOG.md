@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0 - 2026-11-23
+
+- **Child's program (Robots Code Studio, add-on 0.3.0+):** new **Program** binary sensor
+  (`binary_sensor.vector_program`, attributes `owner`, `since`, `limit`) and **Program** event
+  entity (`program_started` / `program_ended` with `reason` and `cause`); bus events
+  `vector_program_started` and `vector_program_ended` for automations. The state comes from the
+  add-on's hello, its state pushes and the program events (shown at once).
+- **Control card during a program:** the controls are greyed out with "Child's program running";
+  **STOP** stays and ends the program (the add-on answers every stop, reason `ha_stop`). A program
+  that starts while somebody drives from the card stops that driving and the card's hold.
+- The add-on's `hello.features` is read (`client.features`), so newer add-on features can be
+  detected.
+- README: section *Child's program* with FAQ (card does nothing, program stopped by itself,
+  silent announcements).
+
 ## 0.2.6 - 2026-11-22
 
 - **Fix: half-grey background (last frame), cut intercom messages and cut audio.** Home Assistant

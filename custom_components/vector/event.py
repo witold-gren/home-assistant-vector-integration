@@ -1,4 +1,5 @@
-"""Robot events as event entities: wake word, contact (touch, pick-up…) and face."""
+"""Robot events as event entities: wake word, contact (touch, pick-up…), face, photo and a
+child's program starting / ending."""
 
 from __future__ import annotations
 
@@ -19,6 +20,8 @@ EVENT_ENTITIES: dict[str, list[str]] = {
     "interaction": ["touched", "picked_up", "button_pressed", "cliff", "cube_tapped"],
     "face": ["face_seen"],
     "photo": ["photo_taken"],
+    # a child's program (Robots Code Studio): data owner, reason, cause (why it ended)
+    "program": ["program_started", "program_ended"],
 }
 
 

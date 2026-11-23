@@ -15,6 +15,9 @@
       },
       "cube_connected": {
         "default": "mdi:cube-outline"
+      },
+      "program": {
+        "default": "mdi:robot-happy-outline"
       }
     },
     "sensor": {
@@ -175,6 +178,9 @@
       },
       "speech": {
         "default": "mdi:account-voice"
+      },
+      "program": {
+        "default": "mdi:code-braces"
       }
     },
     "text": {
