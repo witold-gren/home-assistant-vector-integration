@@ -1,4 +1,5 @@
-"""Manual behavior control (up to 10 minutes) and the voice router (Vector → Home Assistant)."""
+"""Manual behavior control (up to 10 minutes), stand still (add-on 0.5.0+) and the voice router
+(Vector → Home Assistant)."""
 
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ from .api import VectorClient
 from .entity import VectorEntity
 
 HOLD_SECONDS = 600
+STAND_STILL_FEATURE = "stay_still"
 
 # robot setting (jdoc ROBOT_SETTINGS) -> command; 24 h clock only via wire-pod
 SETTING_SWITCHES = (
@@ -30,6 +32,7 @@ async def async_setup_entry(
 ) -> None:
     client = entry.runtime_data.client
     entities: list[SwitchEntity] = [VectorControlSwitch(client, esn) for esn in client.robots]
+    entities += [VectorStandStillSwitch(client, esn) for esn in client.robots]
     if client.voice_router is not None:
         entities += [VectorVoiceRouterSwitch(client, esn) for esn in client.robots]
         entities += [VectorLLMProxySwitch(client, esn) for esn in client.robots]
@@ -58,6 +61,30 @@ class VectorControlSwitch(VectorEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         await self._command("release_control")
+
+
+class VectorStandStillSwitch(VectorEntity, SwitchEntity):
+    """On: the add-on keeps Vector still between programs (no roaming, no fidgeting)."""
+
+    _attr_translation_key = "stand_still"
+
+    def __init__(self, client: VectorClient, esn: str) -> None:
+        super().__init__(client, esn, "stand_still")
+
+    @property
+    def available(self) -> bool:
+        # add-on 0.5.0+ announces it in hello
+        return super().available and STAND_STILL_FEATURE in self._bridge.features
+
+    @property
+    def is_on(self) -> bool:
+        return bool(self.state_data.get("stay_still"))
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._command("stay_still", on=True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._command("stay_still", on=False)
 
 
 class VectorVoiceRouterSwitch(VectorEntity, SwitchEntity):

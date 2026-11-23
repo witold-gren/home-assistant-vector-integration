@@ -134,6 +134,12 @@
       }
     },
     "switch": {
+      "stand_still": {
+        "default": "mdi:pause-octagon-outline",
+        "state": {
+          "on": "mdi:pause-octagon"
+        }
+      },
       "hold_control": {
         "default": "mdi:controller"
       },

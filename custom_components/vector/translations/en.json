@@ -228,6 +228,9 @@
       }
     },
     "switch": {
+      "stand_still": {
+        "name": "Stand still"
+      },
       "hold_control": {
         "name": "Manual control"
       },

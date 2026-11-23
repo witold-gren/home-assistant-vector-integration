@@ -228,6 +228,9 @@
       }
     },
     "switch": {
+      "stand_still": {
+        "name": "Stój w miejscu"
+      },
       "hold_control": {
         "name": "Ręczne sterowanie"
       },

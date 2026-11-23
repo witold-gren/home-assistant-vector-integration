@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- **Stand still (add-on 0.5.0+):** new switch **Stand still** (`switch.vector_stand_still`) and a
+  button next to **Hold** on the control card keep Vector still between programs (no roaming, no
+  fidgeting). The add-on lets him go after 60 min without a program, on a low battery and on
+  go_to_charger; the switch follows. Unavailable with older add-ons (no `stay_still` feature).
+
 ## 0.3.1 - 2026-11-23
 
 - **Activity shows a child's program:** while a program from Robots Code Studio runs, the

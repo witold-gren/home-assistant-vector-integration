@@ -173,6 +173,10 @@ class FakeBridge:
             robot["control"] = "held"
         elif cmd == "release_control":
             robot["control"] = "none"
+        elif cmd == "stay_still":
+            if "on" in args:
+                robot["stay_still"] = bool(args["on"])
+            result = {"stay_still": bool(robot.get("stay_still"))}
         elif cmd == "list_animation_triggers":
             result = ["GreetAfterLongTime", "PounceSuccess"]
         elif cmd == "list_faces":

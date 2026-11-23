@@ -108,7 +108,7 @@ examples assume a robot named "Vector".
 | Number | Head angle, lift height |
 | Select | Volume, eye color, robot language, back button, play animation |
 | Light | Eyes (any custom color) |
-| Switch | Manual control, Voice → Home Assistant, wire-pod LLM → Home Assistant, 24-hour clock, metric units, Fahrenheit |
+| Switch | Manual control, Stand still (add-on 0.5.0+), Voice → Home Assistant, wire-pod LLM → Home Assistant, 24-hour clock, metric units, Fahrenheit |
 | Text | Time zone, weather location |
 | Camera | Live stream on demand (WebRTC with sound, add-on 0.2.0+; MJPEG with older add-ons), cached snapshot |
 | Image | Last photo, last frame of the live view (kept in Home Assistant, always available — the card's full-screen background) |
@@ -224,6 +224,10 @@ camera: camera.vector
   control is given back when the view closes, a minute after the last drive in the tile, or when
   the page goes to the background. The **Hold** toggle keeps it on until pressed again; `hold: false`
   disables the automatic part.
+- **Stand still** (add-on 0.5.0+): the button next to **Hold** (and the switch *Stand still*) keeps
+  Vector still between programs — he does not roam or fidget, so children can program him without
+  carrying him back. Tap again to let him go; the add-on lets go by itself after 60 min without a
+  program, on a low battery and when he goes to the charger. Driving from the card still works.
 - **Loader**: a spinner shows until the first frame arrives (Vector may need a few seconds, longer
   on the charger). The tile has its own 🔊 button while the live view runs.
 - **On the charger** a bar with **Drive off charger** appears, and the forward arrow drives Vector
@@ -319,6 +323,9 @@ End reasons: `end`, `stop`, `error` (from the program), `watchdog` (the studio s
 `falling`, `wake_word`, `robot`, `connection`, and `disconnected` with `cause` `client` or `robot`.
 
 ### FAQ
+
+**Vector does not move on his own any more.** *Stand still* is on (button next to **Hold**, switch
+*Stand still*): the add-on holds his control between programs. Tap it again to let him go.
 
 **The card does nothing and says "Child's program running".** A child's program drives Vector; only
 the program may move him now. Tap **STOP** to end it — the card works again at once.

@@ -451,3 +451,28 @@ def test_program_in_full_screen(open_card) -> None:
     assert _calls(page, "turn_on") == []  # opening the view takes no control during a program
     page.locator("div.vector-fs-host #fs-stop").click()
     assert len(_calls(page, "stop")) == 1
+
+
+# --- stand still (add-on 0.5.0+) -----------------------------------------------------------------
+
+
+def test_stand_still_button_hidden_without_the_switch(page) -> None:
+    assert not page.locator(".speed .still-t").is_visible()
+
+
+def test_stand_still_button_toggles_the_switch(open_card) -> None:
+    page = open_card("still=off")
+    button = page.locator(".speed .still-t")
+    assert button.is_visible() and "Stój w miejscu" in button.inner_text()
+    button.click()
+    assert [(c["domain"], c["data"]) for c in _calls(page, "turn_on")] == [
+        ("switch", {"entity_id": "switch.vector_stand_still"})
+    ]
+    page = open_card("still=on")
+    button = page.locator(".speed .still-t")
+    assert "Stoi w miejscu" in button.inner_text()
+    assert "on" in (button.get_attribute("class") or "")
+    button.click()
+    assert [c["data"] for c in _calls(page, "turn_off")] == [
+        {"entity_id": "switch.vector_stand_still"}
+    ]

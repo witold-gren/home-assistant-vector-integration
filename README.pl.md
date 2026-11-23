@@ -111,7 +111,7 @@ nazwie „Vector”.
 | Liczba | Kąt głowy, wysokość podnośnika |
 | Wybór | Głośność, kolor oczu, język robota, przycisk na plecach, odtwórz animację |
 | Światło | Oczy (dowolny własny kolor) |
-| Przełącznik | Ręczne sterowanie, Głos → Home Assistant, LLM wire-pod → Home Assistant, zegar 24 h, jednostki metryczne, stopnie Fahrenheita |
+| Przełącznik | Ręczne sterowanie, Stój w miejscu (dodatek 0.5.0+), Głos → Home Assistant, LLM wire-pod → Home Assistant, zegar 24 h, jednostki metryczne, stopnie Fahrenheita |
 | Tekst | Strefa czasowa, lokalizacja pogody |
 | Kamera | Podgląd na żywo na żądanie (WebRTC z dźwiękiem, dodatek 0.2.0+; MJPEG ze starszym dodatkiem), zapamiętany zrzut |
 | Obraz | Ostatnie zdjęcie, ostatnia klatka podglądu na żywo (trzymana w Home Assistant, zawsze dostępna — tło pełnego ekranu karty) |
@@ -231,6 +231,10 @@ camera: camera.vector
   do Vectora po zamknięciu widoku, minutę po ostatniej jeździe w kafelku albo gdy strona przejdzie
   w tło. Przycisk **Trzymaj** utrzymuje ją do ponownego naciśnięcia; `hold: false` wyłącza część
   automatyczną.
+- **Stój w miejscu** (dodatek 0.5.0+): przycisk obok **Trzymaj** (i przełącznik *Stój w miejscu*)
+  trzyma Vectora w miejscu między programami — nie jeździ sam i się nie wierci, więc dzieci mogą go
+  programować bez ciągłego przestawiania. Dotknij znowu, żeby go puścić; dodatek puszcza go sam po
+  60 min bez programu, przy niskiej baterii i gdy jedzie do ładowarki. Jazda z karty dalej działa.
 - **Wskaźnik ładowania**: kręciołek widać do pierwszej klatki (Vector potrzebuje kilku sekund, na
   ładowarce dłużej). Kafelek ma własny przycisk 🔊, gdy działa podgląd na żywo.
 - **Na ładowarce** pojawia się pasek z przyciskiem **Zjedź z ładowarki**, a strzałka do przodu
@@ -327,6 +331,10 @@ Powody końca: `end`, `stop`, `error` (od programu), `watchdog` (studio przesta�
 `falling`, `wake_word`, `robot`, `connection` oraz `disconnected` z `cause` `client` albo `robot`.
 
 ### FAQ
+
+**Vector przestał sam jeździć.** Włączone jest *Stój w miejscu* (przycisk obok **Trzymaj**,
+przełącznik *Stój w miejscu*): dodatek trzyma jego kontrolę między programami. Dotknij znowu, żeby go
+puścić.
 
 **Karta nic nie robi i pokazuje „Program dziecka działa”.** Vectorem steruje program dziecka; tylko
 on może teraz nim ruszać. Dotknij **STOP**, żeby go zakończyć — karta od razu znowu działa.

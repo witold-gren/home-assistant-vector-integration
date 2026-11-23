@@ -54,6 +54,9 @@
       fast: "Fast",
       hold: "Hold",
       holding: "Holding",
+      still: "Stand still",
+      still_on: "Standing still",
+      still_title: "Vector stands still between programs (no roaming). Tap again to let him go.",
       drive_off: "Drive off charger",
       to_charger: "Go to charger",
       snapshot: "Refresh snapshot",
@@ -103,6 +106,9 @@
       fast: "Szybko",
       hold: "Trzymaj",
       holding: "Trzymam",
+      still: "Stój w miejscu",
+      still_on: "Stoi w miejscu",
+      still_title: "Vector stoi w miejscu między programami (nie jeździ sam). Dotknij znowu, żeby go puścić.",
       drive_off: "Zjedź z ładowarki",
       to_charger: "Do ładowarki",
       snapshot: "Zdjęcie do podglądu",
@@ -261,6 +267,11 @@
     .speed button.hold-t { gap:6px; }
     .speed button.hold-t ha-icon { --mdc-icon-size:16px; }
     .speed button.hold-t.on { background:#1ce6a0; color:#000; }
+    /* stand still (add-on 0.5.0+): shown only when the robot has the switch */
+    .speed button.still-t { gap:6px; display:none; }
+    .speed button.still-t.avail { display:inline-flex; }
+    .speed button.still-t ha-icon { --mdc-icon-size:16px; }
+    .speed button.still-t.on { background:#ffab19; color:#000; }
   `;
 
   // Full-screen view (portal in <body>), sized for a phone in landscape (~874×402 CSS px).
@@ -515,6 +526,18 @@
         this._manualHold = false;
       }
 
+      /* ---------------- stand still (switch "Stand still", add-on 0.5.0+) ---------------- */
+
+      _standStill() {
+        return this._sibling("switch", "stand_still");
+      }
+
+      _toggleStill() {
+        const sw = this._standStill();
+        if (!sw || sw.state === "unavailable") return;
+        this._callRaw("switch", sw.state === "on" ? "turn_off" : "turn_on", { entity_id: sw.entity_id });
+      }
+
       _onCharger() {
         const ch = this._sibling("binary_sensor", "on_charger");
         return !!ch && ch.state === "on";
@@ -606,6 +629,7 @@
           `<button data-speed="normal">${t("normal")}</button>` +
           `<button data-speed="fast">${t("fast")}</button>` +
           `<span class="sep"></span><button class="hold-t">${icon("mdi:hand-back-right")}<span>${t("hold")}</span></button>` +
+          `<button class="still-t" title="${t("still_title")}">${icon("mdi:pause-octagon")}<span>${t("still")}</span></button>` +
           `</div>` +
           `<div class="actions">` +
           `<button data-press="drive_off_charger">${icon("mdi:arrow-up-box")}${t("drive_off")}</button>` +
@@ -630,6 +654,7 @@
           this._manualHold = on; // the user's own hold is not released automatically
           this._setHold(on);
         });
+        root.querySelector(".speed .still-t").addEventListener("click", () => this._toggleStill());
         root.querySelectorAll(".actions button, .charger button").forEach((btn) => {
           btn.addEventListener("click", () => this._pressButton(btn.dataset.press));
         });
@@ -741,6 +766,11 @@
         const ht = this._root.querySelector(".speed .hold-t");
         ht.classList.toggle("on", held);
         ht.querySelector("span").textContent = this._t(held ? "holding" : "hold");
+        const still = this._standStill();
+        const sb = this._root.querySelector(".speed .still-t");
+        sb.classList.toggle("avail", !!still && still.state !== "unavailable");
+        sb.classList.toggle("on", !!still && still.state === "on");
+        sb.querySelector("span").textContent = this._t(still && still.state === "on" ? "still_on" : "still");
         if (this._fsOpen) this._updateFs();
       }
 
