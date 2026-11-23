@@ -86,3 +86,40 @@ async def test_stop_service_during_a_program(
     await setup(hass, entry)
     await hass.services.async_call("vector", "stop", {}, blocking=True)
     assert bridge.commands[-1]["command"] == "stop"
+
+
+async def test_activity_shows_child_program(
+    hass: HomeAssistant, bridge: FakeBridge, entry: MockConfigEntry
+) -> None:
+    """While a program runs the robot reports "SDK"; the activity sensor shows ChildProgram."""
+    await setup(hass, entry)
+    state = hass.states.get("sensor.vector_activity")
+    assert state.state == "ObservingOnCharger"
+    assert state.attributes["robot_activity"] == "ObservingOnCharger"
+
+    bridge.robots[ESN]["activity"] = "SDK"
+    await bridge.push(ESN)
+    await bridge.event("program_started", {**PROGRAM, "heartbeat": 3})
+    await settle(hass)
+    state = hass.states.get("sensor.vector_activity")
+    assert state.state == "ChildProgram"
+    assert state.attributes["robot_activity"] == "SDK"
+
+    await bridge.event("program_ended", {"owner": "rcs", "reason": "end", "duration": 3.0})
+    bridge.robots[ESN]["activity"] = "Exploring"
+    await bridge.push(ESN)
+    await settle(hass)
+    state = hass.states.get("sensor.vector_activity")
+    assert state.state == "Exploring"
+    assert state.attributes["robot_activity"] == "Exploring"
+
+
+async def test_activity_child_program_from_hello(
+    hass: HomeAssistant, bridge: FakeBridge, entry: MockConfigEntry
+) -> None:
+    bridge.robots[ESN]["program"] = dict(PROGRAM)
+    bridge.robots[ESN]["activity"] = "SDK"
+    await setup(hass, entry)
+    state = hass.states.get("sensor.vector_activity")
+    assert state.state == "ChildProgram"
+    assert state.attributes["robot_activity"] == "SDK"

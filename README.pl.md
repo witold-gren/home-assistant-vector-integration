@@ -299,6 +299,14 @@ też robota, gdy studio przestaje odpowiadać, po limicie czasu i gdy Vector sam
 (krawędź stołu, podniesienie). Konfiguracja (token studia, port 3012): dokumentacja dodatku, sekcja
 *Robots Code Studio*.
 
+W czasie programu robot zgłasza aktywność `SDK`; czujnik **Aktywność** (`sensor.vector_activity`)
+pokazuje wtedy **`ChildProgram`** (atrybut `robot_activity`: surowa wartość z robota). W Home
+Dashboard nadaj jej etykietę w statusie kafelka, np. `labels: {ChildProgram: "Program dziecka"}`,
+i dodaj przycisk STOP widoczny tylko w czasie programu: `quick: {name: STOP, icon:
+mdi:stop-circle-outline, service: vector.stop, data: {device_id: <id>}, active:
+binary_sensor.vector_program}` (`device_id` można pominąć, gdy jest tylko jeden robot;
+`vector.stop` nie przyjmuje encji jako celu).
+
 `event.vector_program` i zdarzenia `vector_program_started` / `vector_program_ended` służą do
 automatyzacji, np. powiadomienie, gdy program skończy się z `reason: control_lost`:
 

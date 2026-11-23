@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 - 2026-11-23
+
+- **Activity shows a child's program:** while a program from Robots Code Studio runs, the
+  activity sensor (`sensor.vector_activity`) is `ChildProgram` instead of the robot's own `SDK`;
+  the new attribute `robot_activity` always keeps the raw value from the robot. A dashboard can
+  label it, e.g. Home Dashboard `labels: {ChildProgram: "Program dziecka"}`.
+
 ## 0.3.0 - 2026-11-23
 
 - **Child's program (Robots Code Studio, add-on 0.3.0+):** new **Program** binary sensor

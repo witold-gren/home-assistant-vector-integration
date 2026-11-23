@@ -60,6 +60,17 @@ def _face_seen(s: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+# shown while a child's program (Robots Code Studio) runs; the robot itself reports "SDK" then
+CHILD_PROGRAM_ACTIVITY = "ChildProgram"
+
+
+def _activity(s: dict[str, Any]) -> Any:
+    """The robot's activity, or ChildProgram while a child's program runs."""
+    if s.get("program"):
+        return CHILD_PROGRAM_ACTIVITY
+    return s.get("activity") or None
+
+
 SENSORS: tuple[VectorSensorDescription, ...] = (
     VectorSensorDescription(
         key="battery",
@@ -87,7 +98,11 @@ SENSORS: tuple[VectorSensorDescription, ...] = (
         value=_battery("level"),
     ),
     VectorSensorDescription(
-        key="activity", translation_key="activity", value=lambda s: s.get("activity") or None
+        key="activity",
+        translation_key="activity",
+        value=_activity,
+        # the raw value from the robot, also while a child's program runs ("SDK")
+        attrs=lambda s: {"robot_activity": s.get("activity") or None},
     ),
     VectorSensorDescription(
         key="stimulation",

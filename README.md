@@ -291,6 +291,14 @@ also stops the robot when the studio stops answering, at the time limit and when
 control back (a table edge, being picked up). Setting it up (studio token, port 3012): see the
 add-on's documentation, section *Robots Code Studio*.
 
+During a program the robot reports the activity `SDK`; the **Activity** sensor
+(`sensor.vector_activity`) shows **`ChildProgram`** instead (attribute `robot_activity`: the raw
+value from the robot). In Home Dashboard give it a label in the tile's status, e.g.
+`labels: {ChildProgram: "Program dziecka"}`, and a STOP button that shows only during a program:
+`quick: {name: STOP, icon: mdi:stop-circle-outline, service: vector.stop, data: {device_id: <id>},
+active: binary_sensor.vector_program}` (`device_id` may be left out when there is only one
+robot; `vector.stop` takes no entity target).
+
 `event.vector_program` and the bus events `vector_program_started` / `vector_program_ended` are for
 automations, e.g. a notification when a program ends with `reason: control_lost`:
 
